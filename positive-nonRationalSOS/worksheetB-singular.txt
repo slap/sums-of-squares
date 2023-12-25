@@ -1,0 +1,47 @@
+///////////////////////////////////////////////////////////////////////
+// Example of a strictly positive polynomial that is a SOS over R 
+// but not over Q.
+// Author: Santiago Laplagne
+///////////////////////////////////////////////////////////////////////
+
+// We verify that the example provided in the paper is nonsingular.
+
+LIB"sing.lib";
+ring R = 0, (x0,x1,x2,x3,y0,y1,y2,y3), dp;
+
+// Polynomial in the variables x0, x1, x2, x3 that is R-sos but not Q-sos.
+poly f = 40*x0^4+8*x0^2*x1^2+32*x0^2*x1*x2+64*x0^2*x1*x3+16*x0^2*x2^2+16*x0^2*x2*x3+32*x0^2*x3^2+2*x1^4+8*x1^2*x2^2+8*x1^2*x2*x3+16*x1*x2*x3^2+8*x2^2*x3^2+8*x3^4;
+
+// Strictly positive polynomial in border of the SOS-cone 
+poly g1 = y0^2-y3^2; 
+poly g2 = y1^2-y3^2; 
+poly g3 = y2^2-y3^2; 
+poly g4 = -y0^2-y0*y1-y0*y2+y0*y3-y1*y2+y1*y3+y2*y3; 
+poly g = g1^2+g2^2+g3^2+g4^2;
+
+// A new polynomial
+poly r = x2^2 - y2^2;
+
+// Strictly positive polynomial that is R-SOS but not Q-SOS
+poly h = f + g + r^2;
+
+// We compute the singular locus
+option("redSB");
+ideal I = slocus(h);  // I = <f, df/dx0, ..., df/dy3>
+list l = facstd(I);   // The Factorizing groebner basis algorithm 
+                      // computes ideals J_1, ..., J_s such that the 
+                      // radical of I is equal to the intersection of 
+                      // the radicals of J_1, ..., J_s.
+
+l;
+// [1]:
+//    _[1]=y3
+//    _[2]=y2
+//    _[3]=y1
+//    _[4]=y0
+//    _[5]=x3
+//    _[6]=x2
+//    _[7]=x1
+//    _[8]=x0
+
+// No singular points in projective space.
