@@ -1320,7 +1320,7 @@ numericSolverSubmatrixMaxRank := proc(M, objFunction)
 
   subsub := linIndepRows(M);
   
-  print(subsub);
+  #print("subsub: ", subsub);
 
   MMT, tVars, y := solveSubset(M, subsub, objFunction);
   MMT, tVars, y:
@@ -2446,9 +2446,9 @@ end proc:
 # Computes the minors of given size
 minorsDet := proc(A, n0, d)
   local l, i, m;
-  print(1);
+  #print(1);
   l := listSubsets([seq(i,i=1..n0)], d);
-  print(l);
+  #print(l);
   m := [];
   for i from 1 to nops(l) do
     m := [op(m), Determinant(LinearAlgebra[SubMatrix](A, l[i], l[i]))];
