@@ -1,0 +1,163 @@
+# Construction of a strictly positive polyonmial in the boundary 
+# of Sigma_{3, 10} that is the sum of 8 squares.
+
+#######################################################################
+# Load "Rational SOS" procedures
+#######################################################################
+read("rationalSOS.mpl"):
+with(rationalSOS):
+with(LinearAlgebra):
+
+# Display tables of any size
+interface(rtablesize=infinity);
+
+#######################################################################
+
+# We can define two polynomials with 25 common roots
+# p1 := x1*(x1-x0)*(x1+x0)*(x1-2*x0)*(x1+2*x0);
+# p2 := x2*(x2-x0)*(x2+x0)*(x2-2*x0)*(x2+2*x0);
+
+# Here we use directly a polynomial of degree 5 and a polynomial
+# of degree 3, as suggested in Section 4.5
+p1 := (x1)*(x1-x0)*(x1+x0);
+p2 := (x2)*(x2-x0)*(x2-2*x0)*(x2+x0)*(x2+2*x0);
+
+# The list of common roots.
+sols := solve({p1, p2, x0-1});
+print("Number of solutions: ", nops([sols]));
+
+########################################################################
+# We compute the linear relation among the points
+########################################################################
+
+# We define the set of monomials of degree d (stored in ctd) and
+# the set of monomials of degree 2d (stored in ct2d), for d = 5.
+d := 5:
+polVars := [x0,x1,x2]:
+varSum := add(polVars[i], i = 1..nops(polVars)):
+md := expand((varSum)^d):
+cfs := coeffs(md, polVars, 'ctd'):
+print("Monomials of degree d: ", ctd);
+m2d := expand(varSum^(2*d)):
+cfs := coeffs(m2d, polVars, 'ct2d'):
+print("Monomials of degree 2d: ", ct2d);
+
+# We define a generic polynomial of degree d with coefficientes h_i.
+hCoeff := [h[1]]:
+for i from 2 to nops([ctd]) do
+  hCoeff := [op(hCoeff), h[i]]:
+end do:
+hd := add(hCoeff[i] * ctd[i], i = 1..nops(hCoeff)):
+print("Generic polynomial h of degree d: ", hd);
+
+# We consider the set of 15 roots 
+# (1:a:b) with a in {-1, 0, 1} and b in {0, 1, 2, 3, 4}.
+
+nRoots := 15;
+nCoeff := 21;
+alphaSeq := seq(eval(hd, sols[i]), i = 1..nRoots):
+
+# There is an unique relationship with all nonzero coefficients
+MEval := Matrix(nRoots, nCoeff):
+for i from 1 to nRoots do:
+  aaC := getCoeffs(expand(alphaSeq[i]), hCoeff);
+  MEval[i,1..nCoeff] := aaC:
+end:
+u := NullSpace(Transpose(MEval));
+uVec := u[1]:
+
+########################################################################
+# We construct quadratic form Q and the associated matrix.
+########################################################################
+
+# The coefficients of the linear form l.
+# We will leave the last coefficient a_15 as indeterminate and 
+# compute it using Maple to verify the theoretical formulas.
+a := [seq(uVec[i]^2, i=1..nRoots)]:
+a[nRoots] := cc:
+print(a);
+
+# We define the quadratic form Q(h), as a linear combination of 
+# evaluations of h^2 in the 15 points defined above, with
+# coefficients a_i
+hd_square := expand(hd^2):
+QForm := add(a[i]*eval(hd_square, sols[i]), i = 1..nRoots):
+
+# We construct the matrix associated to Q.
+# We define it as a 15x15 matrix with indeterminate entries, and 
+# compute the entries so that c' Qmatrix c = Qform, where
+# c are the monomials of degree d.
+mSize := nCoeff:
+MM := Matrix(mSize):
+for i to mSize do 
+  for j from i to mSize do 
+    MM[i, j] := c[i, j]; 
+    MM[j, i] := c[i, j];
+  end do:
+end do: 
+
+# Vector q of monomials of degree d, with generic coefficients
+hCoeffVector := Vector(hCoeff):
+
+# We compute h' * MM * h 
+hCoeffVector_T := Transpose(hCoeffVector):
+hTMh := expand(hCoeffVector_T . MM . hCoeffVector):
+
+# Finally we equate the coefficients of h'*MM*h and those of QForm
+# and compute the coefficients of MM.
+eqs := {coeffs(collect(hTMh-QForm,hCoeff,'distributed'),hCoeff)}:
+sol := solve(eqs):
+
+# We replace the coefficients by the values obtained
+MMC := eval(MM, sol);
+
+
+########################################################################
+# We compute the value of cc so that the kernel has dimension 8
+########################################################################
+
+# The first seven eigenvalues are 0.
+ev := Eigenvalues(MMC);
+
+# There are 7 null eigenvalues and the remaining 14 are roots of a
+# polynomial of degree 14. 
+# We choose cc so that this polynomial has a root equal to 0.
+e8 := op(ev[8]):
+e80 := eval(e8, {_Z=0}):
+fac := factors(e80):
+rr := solve(fac[2][1][1]);
+
+# We recover the value for a_15 predicted by the theoretical formula.
+
+########################################################################
+# The eight polynomials in the kernel
+########################################################################
+
+MMC2 := eval(MMC, {cc=rr}):
+nspace := NullSpace(MMC2);
+
+# Polynomials
+w1 := LinearAlgebra[DotProduct](nspace[1], Vector([ctd]));
+w2 := LinearAlgebra[DotProduct](nspace[2], Vector([ctd]));
+w3 := LinearAlgebra[DotProduct](nspace[3], Vector([ctd]));
+w4 := LinearAlgebra[DotProduct](nspace[4], Vector([ctd]));
+w5 := LinearAlgebra[DotProduct](nspace[5], Vector([ctd]));
+w6 := LinearAlgebra[DotProduct](nspace[6], Vector([ctd]));
+w7 := LinearAlgebra[DotProduct](nspace[7], Vector([ctd]));
+w8 := LinearAlgebra[DotProduct](nspace[8], Vector([ctd]));
+
+# We construct the sum of squares 
+pp := w1^2 + w2^2 + w3^2 + w4^2 + w5^2 + w6^2 + w7^2 + w8^2;
+
+# And verify using SEDUMI that this polynomial is in the border of 
+# the SOS cone.
+out := exactSOS(pp, facial = "no", objFunction = "eig"):
+eig(out[3]);
+
+# We obtain a sum of 8 squares in the border (the matrix has rank 8).
+
+# In this case the decomposition is not unique.
+# Minimizing another function we obtain a different matrix, with
+# smaller rank.
+out := exactSOS(pp, facial = "no", objFunction = "random"):
+eig(out[3]);

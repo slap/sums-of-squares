@@ -1,0 +1,126 @@
+######################################################################
+## Section 4
+## Polynomials of 5 variables in degree 4
+######################################################################
+
+# Set the working directory
+currentdir("C:/Users/slapl/Dropbox/repos/rationalSOS");
+
+#######################################################################
+# Load "Rational SOS" procedures
+#######################################################################
+read("rationalSOS.mpl");
+with(rationalSOS);
+with(LinearAlgebra);
+
+# Display tables of any size
+interface(rtablesize=infinity);
+
+#######################################################################
+## Example 4.3 
+## Example in the border with unique solution
+#######################################################################
+
+# The first 4 polynomials correspond to an example of a polynomial 
+# in the non-negative border of the SOS-cone in the 4-4 case.
+# We add a fifth polynomial to produce an example for the 5-4 case.
+p1 := x1^2- x4^2;
+p2 := x2^2- x4^2;
+p3 := x3^2- x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2
+
+# f is the sum of squares of p1, ..., p5
+f := p1^2+p2^2+p3^2+p4^2+p5^2;
+
+# We use SEDUMI to compute a SOS decomposition.
+# With default options, exactSOS will compute a solution of maximum rank
+out := exactSOS(f, facial = "no"):
+
+# out[3] is a matrix in the spectrahedron of maximum rank.
+# We check the eigenvalues to determine the rank
+eig(out[3]);
+
+# There are only 5 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 5.
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1^2+p2^2+p3^2+p4^2+p5^2.
+v := convert(out[5], list):  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1, p2, p3, p4, p5], v):
+A2 := out[3]:
+Norm(A1 - A2);
+
+# We see that both matrices are the same. 
+# This gives strong numerical evidence that this is the unique matrix 
+# in the spectrahedron of f.
+
+
+#######################################################################
+## Example 4.4
+## Example in the border with a matrix in the spectrahedron 
+## of rank 9, the maximum round predicted by our bounds
+#######################################################################
+
+# We add a polynomial f6 to the previous example
+p1 := x1^2- x4^2;
+p2 := x2^2- x4^2;
+p3 := x3^2- x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2;
+p6 := x4*x5;
+f := p1^2 + p2^2 + p3^2 + p4^2 + p5^2 + p6^2;
+
+# We use SEDUMI to compute a SOS decomposition.
+# With default options, exactSOS will compute a solution of maximum rank
+
+out := exactSOS(f, computePolynomialDecomposition = "no"):
+
+# out[3] is a matrix in the spectrahedron of maximum rank.
+# We check the eigenvalues to determine the rank
+eig(out[3]);
+
+# There are 9 non-zero eigenvalues, which corresponds to the maximum
+# possible rank predicted by our results.
+
+
+#######################################################################
+## Example 4.5
+## Example in the border with a matrix in the spectrahedron of rank 6.
+#######################################################################
+
+# We add a different polynomial f6 to example 4.3
+p1 := x1^2- x4^2;
+p2 := x2^2- x4^2;
+p3 := x3^2- x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2;
+p6 := x1*x5 + x4*x5;
+f := p1^2 + p2^2 + p3^2 + p4^2 + p5^2 + p6^2;
+
+# We use SEDUMI to compute a SOS decomposition.
+# With default options, exactSOS will compute a solution of maximum rank
+
+# We do not compute the polynomail decomposition since it gives an error.
+# (the tools for computing the decomposition in Maple are in a 
+# educational package which is not)
+
+out := exactSOS(f, computePolynomialDecomposition = "no"):
+
+# out[3] is a matrix in the spectrahedron of maximum rank.
+# We check the eigenvalues to determine the rank
+eig(out[3]);
+
+# There are 6 non-zero eigenvalues.
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1^2+p2^2+p3^2+p4^2+p5^2+p6^2.
+v := convert(out[5], list):  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1, p2, p3, p4, p5, p6], v):
+A2 := roundToIntMatrix(out[3], 6);  # We convert some almost integer values to integers
+Norm(A1 - A2);
+
+# We see that both matrices are the same. 
+# This gives strong numerical evidence that this is the unique matrix 
+# in the spectrahedron of f.
+

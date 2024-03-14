@@ -1,0 +1,504 @@
+restart;
+currentdir("C:/Users/Usuario/Dropbox/repos/rationalSOS/");
+
+#######################################################################
+# Load "Rational SOS" procedures
+#######################################################################
+restart;
+read("rationalSOS.mpl");
+with(rationalSOS);
+
+# Display tables of any size
+interface(rtablesize=infinity);
+
+
+#######################################################################
+## Example 6.1
+## Example of a polynomial in the border that is sum of less than
+## n = 6 polynomials, and such that the polynomials in a SOS
+## decomposition have a common complex zero.
+#######################################################################
+
+# The 5 polynomials 
+p1 := x1^2 - x4^2;
+p2 := x2^2 - x4^2;
+p3 := x3^2 - x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2 + x6^2;
+
+# f is the sum of squares of p1, ..., p5
+f := p1^2+p2^2+p3^2+p4^2+p5^2;
+f := expand(f);
+
+# We compute the common solutions of {p1, p2, p3, p4, p5}
+solve({p1, p2, p3, p4, p5})
+
+# We use SEDUMI to compute a SOS decomposition.
+# We do not perform facial reduction, since we are interested in the
+# solutions of maximum rank. 
+out := exactSOS(f, facial = "no"):
+
+# out[3] is a matrix in the spectrahedron of maximum rank.
+# We check the eigenvalues to determine the rank
+eig(out[3]);
+
+# There are only 7 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 7. f is a polynomial in the border of the SOS cone.
+
+
+
+#######################################################################
+## Example 6.2
+## Examples of polynomial in the border of the (6,4)-cone with 
+## different maximum ranks of the matrices in the spectrahedron.
+#######################################################################
+
+# Maximum rank in the spectrahedron = 5
+
+# The 5 polynomials 
+p1 := x1^2 - x4^2;
+p2 := x2^2 - x4^2;
+p3 := x3^2 - x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2 + x6^2- x4^2;
+f := p1^2+p2^2+p3^2+p4^2+p5^2;
+
+# Numerical solution 
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+#######################################################################
+
+# Maximum rank in the spectrahedron = 6
+
+# The 5 polynomials 
+p1 := x1^2 - x4^2;
+p2 := x2^2 - x4^2;
+p3 := x3^2 - x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2 - x4^2;
+p6 := x6^2;
+f := p1^2+p2^2+p3^2+p4^2+p5^2+p6^2;
+
+# Numerical solution 
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+#######################################################################
+
+# Maximum rank in the spectrahedron = 11
+
+# The 7 polynomials 
+p1 := x1^2 - x4^2;
+p2 := x2^2 - x4^2;
+p3 := x3^2 - x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2;
+p6 := x6^2;
+p7 := x5*x6 + x1*x5;
+f := p1^2+p2^2+p3^2+p4^2+p5^2 + p6^2 + p7^2;
+
+# Numerical solution of rank 5, there seems to be unique solution.
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+#######################################################################
+
+# Maximum rank in the spectrahedron = 15
+
+# The 8 polynomials 
+p1 := x1^2 - x4^2;
+p2 := x2^2 - x4^2;
+p3 := x3^2 - x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2;
+p6 := x6^2;
+p7 := x5*x6 + x1*x5;
+p8 := x2*x6;
+f := p1^2+p2^2+p3^2+p4^2+p5^2 + p6^2 + p7^2 + p8^2;
+
+# Numerical solution of rank 5, there seems to be unique solution.
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+
+#######################################################################
+
+# Maximum rank in the spectrahedron = 15
+# Example not included in the paper
+
+# The 6 polynomials 
+p1 := x1^2 - x4^2;
+p2 := x2^2 - x4^2;
+p3 := x3^2 - x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2;
+p6 := x6^2;
+p7 := x5*x6 - x1*x5;
+p8 := x2*x6;
+p9 := x3*x6 + x2*x5 + x1*x6;
+f := p1^2+p2^2+p3^2+p4^2+p5^2 + p6^2 + p7^2 + p8^2 + p9^2;
+
+# Numerical solution of rank 5, there seems to be unique solution.
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no");
+eig(out[3]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1^2+p2^2+p3^2+p4^2.
+v := convert(out[5], list);  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1, p2, p3, p4], v);
+A2 := out[3];
+Norm(A1 - A2);
+
+# We see that both matrices are the same. 
+# This gives strong numerical evidence that this is the unique matrix 
+# in the spectrahedron of f.
+
+#######################################################################
+## Proposition 5.8
+## Computational proof of the uniquenes of the SOS decomposition
+## of Example 5.7
+#######################################################################
+
+# Some preparation (computing all monomials of degree 3 and 6 in 4 variables)
+p3 := expand((x+y+z+w)^3);
+cfs := coeffs(p3, [x, y, z, w], 'ct3');
+p6 := expand((x+y+z+w)^6);
+cfs := coeffs(p6, [x, y, z, w], 'ct6');
+psa := a1*w^3 + a2*w^2*x + a3*w^2*y + a4*w^2*z + a5*w*x^2 + a6*w*x*y + a7*w*x*z + a8*w*y^2 + a9*w*y*z + a10*w*z^2 + a11*x^3 + a12*x^2*y + a13*x^2*z + a14*x*y^2 + a15*x*y*z + a16*x*z^2 + a17*y^3 + a18*y^2*z + a19*y*z^2 + a20*z^3;
+ps2 := psa*psa;
+aa := getCoeffs(expand(ps2), [ct6]):
+
+# The 4 even polynomials from Reznick paper
+p1 := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2 := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3 := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4 := w*((2-1/2)*w^2-(x^2+y^2+z^2));
+
+# In order to prove that the given decomposition is unique, we need to
+# find a PSD form whose kernel is only these 4 polynomials
+
+# We compute all the restrictions to phi: A6 -> R given
+# by the four polynomials. There are 20 restrictions for each polynomial
+
+for i from 1 to nops([ct3]) do
+  p1t := expand(p1 * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(p1t, [ct6]));
+  if (i=1) then
+    M := <vec>;
+  else
+    M:=<M,vec>;
+  end if;
+end do:
+for i from 1 to nops([ct3]) do
+  p2t := expand(p2 * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(p2t, [ct6]));
+  M:=<M,vec>;
+end do:
+for i from 1 to nops([ct3]) do
+  p3t := expand(p3 * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(p3t, [ct6]));
+  M:=<M,vec>;
+end do:
+for i from 1 to nops([ct3]) do
+  p4t := expand(p4 * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(p4t, [ct6]));
+  M:=<M,vec>;
+end do:
+
+# We solve the system using only these 80 restriction
+B:=Vector(80):
+s:=LinearAlgebra[LinearSolve](M,B):
+varss:=indets(s);
+nops(varss);  # 10 indeterminates left to solve
+
+# This is the expected number of indeterminates.
+# The original space has dimension 84, and the restrictions
+# 20 + 19 + 18 + 17 = 74 (because pi*pj=pj*pi give the same restriction)
+
+# To construct the desired form we add a new polynomial in the kernel.
+# We will find different psd forms and then add them so that
+# the kernel is generated by just the 4 polynomials
+
+###############
+## p5 := x^3;
+
+M2 := M:
+p5x := x^3;
+for i from 1 to nops([ct3]) do
+  pst := expand(p5x * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(pst, [ct6]));
+  M2:=<M2,vec>;
+end do:
+B:=Vector(100):
+s:=LinearAlgebra[LinearSolve](M2,B):
+varss:=indets(s); # 1 -> We got a unique PSD form
+
+# We compute the form and verify it is PSD
+s1 := eval(s, {varss[1] = 1}):
+ex := LinearAlgebra[Transpose](s1) . aa:
+outx := exactSOS(ex, facial = "no"):
+eig(outx[3]); # 7 positive eigenvalues and 3 null eigenvalues
+
+# Note that this also proofs that the sum p1^2+p2^2+p3^2+p4^2+p5^2 is
+# in the border, because we have a psd form that vanishes in this
+# five polynomials and it is not null.
+
+###############
+## p5 := y^3;
+
+M2 := M:
+p5y := y^3;
+for i from 1 to nops([ct3]) do
+  pst := expand(p5y * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(pst, [ct6]));
+  M2:=<M2,vec>;
+end do:
+B:=Vector(100):
+s:=LinearAlgebra[LinearSolve](M2,B):
+varss:=indets(s); # 1 -> We got a unique PSD form
+
+# We compute the form and verify it is PSD
+s1 := eval(s, {varss[1] = 1}):
+ey := LinearAlgebra[Transpose](s1) . aa:
+outy := exactSOS(ey, facial = "no"):
+eig(outy[3]); # 7 positive eigenvalues and 3 null eigenvalues
+
+###############
+## p5 := z^3;
+
+M2 := M:
+p5z := z^3;
+for i from 1 to nops([ct3]) do
+  pst := expand(p5z * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(pst, [ct6]));
+  M2:=<M2,vec>;
+end do:
+B:=Vector(100):
+s:=LinearAlgebra[LinearSolve](M2,B):
+varss:=indets(s); # 1 -> We got a unique PSD form
+
+# We compute the form and verify it is PSD
+s1 := eval(s, {varss[1] = 1}):
+ez := LinearAlgebra[Transpose](s1) . aa:
+outz := exactSOS(ez, facial = "no"):
+eig(outz[3]); # 7 positive eigenvalues and 3 null eigenvalues
+
+###############
+## p5 := w^3;
+
+M2 := M:
+p5w := w^3;
+for i from 1 to nops([ct3]) do
+  pst := expand(p5w * ct3[i]);
+  vec := LinearAlgebra[Transpose](getCoeffs(pst, [ct6]));
+  M2:=<M2,vec>;
+end do:
+B:=Vector(100):
+s:=LinearAlgebra[LinearSolve](M2,B):
+varss:=indets(s); # 1 -> We got a unique PSD form
+
+# We compute the form and verify it is PSD
+s1 := eval(s, {varss[1] = 1}):
+ew := LinearAlgebra[Transpose](s1) . aa:
+outw := exactSOS(ew, facial = "no"):
+eig(outw[3]); # 7 positive eigenvalues and 3 null eigenvalues
+
+### The desidered form is the sum of all the rank 7 forms:
+eall := ex + ey + ez + ew;
+outall := exactSOS(eall, facial = "no"):
+Eigenvalues(outall[3]);
+
+# [0, 0, 0, 0, 14, 14, 14, 14, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3]
+# (we used Eigenvalues to compute the exact values)
+# We get a psd form of rank four and p1, p2, p3, p4 are in the kernel
+# so this is form we were looking for.
+\end{verbatim}
+
+
+#######################################################################
+## Example 5.9
+## Sum of 4 squares with unique SOS decomposition.
+## Arbitrary perturbation of Reznick example.
+#######################################################################
+
+p1b := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2b := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3b := z*((2-1/2)*z^2-(y^2+w^2));
+p4b := w*((1)*w^2-(x^2+z^2));
+
+# f is the sum of squares of p1b, ..., p4b
+f := p1b^2+p2b^2+p3b^2+p4b^2;
+f := expand(f);
+
+out := exactSOS(f, facial="no"):
+eig(out[3]);
+
+# There are only 4 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 4.
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1b^2+p2b^2+p3b^2+p4b^2.
+v := convert(out[5], list):  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1b, p2b, p3b, p4b], v):
+A2 := out[3]:
+Norm(A1 - A2);
+
+# We see that both matrices are the same. 
+# This gives strong numerical evidence that this is the unique matrix 
+# in the spectrahedron of f.
+
+#######################################################################
+
+
+#######################################################################
+## Example 5.10
+## Sum of 5 squares with unique SOS decomposition.
+#######################################################################
+
+p1c := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2c := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3c := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4c := w*((2-1/2)*w^2-(x^2+y^2+z^2));
+p5c := w*y*z;
+f := p1c^2+p2c^2+p3c^2+p4c^2+p5c^2;
+out := exactSOS(f, facial = "no"):
+eig(out[3]);
+
+# There are only 5 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 5.
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1c^2+p2c^2+p3c^2+p4c^2+p5c^2.
+v := convert(out[5], list):  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1c, p2c, p3c, p4c, p5c], v):
+A2 := out[3]:
+Norm(A1 - A2);
+
+
+#######################################################################
+## Example 5.11
+## Sum of 5 squares with maximum rank 8 in the spectrahedron.
+#######################################################################
+
+p1c := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2c := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3c := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4c := w*((2-1/2)*w^2-(x^2+y^2+z^2));
+p5c := y^2*z;
+f := p1c^2+p2c^2+p3c^2+p4c^2+p5c^2;
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+# There are 8 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 8.
+
+
+#######################################################################
+## Example 5.12
+## First example.
+## Sum of 5 squares with maximum rank 13 in the spectrahedron.
+#######################################################################
+
+p1d := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2d := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3d := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4d := w*((2-1/2)*w^2-(x^2+y^2+z^2));
+p5d := z^3;
+f := p1d^2+p2d^2+p3d^2+p4d^2+p5d^2;
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+# There are 13 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 8.
+
+
+#######################################################################
+## Example 5.12
+## Second example.
+## Sum of 5 squares with maximum rank 13 in the spectrahedron.
+#######################################################################
+
+p1d := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2d := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3d := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4d := w*((2-1/2)*w^2-(x^2+y^2+z^2));
+p5d := y^2*z - z^3;
+f := p1d^2+p2d^2+p3d^2+p4d^2+p5d^2;
+out := exactSOS(f, facial = "no", computePolynomialDecomposition = "no"):
+eig(out[3]);
+
+# There are 13 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 8.
+
+
+
+
+
+
+
+
+
+#######################################################################
+
+# Other examples not included in the paper
+
+# 5 polynomials - Rank 6?
+p1 := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2 := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3 := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4 := w*((2)*w^2-(y^2+z^2));
+f := p1^2+p2^2+p3^2+p4^2+(2*w*y*z)^2;
+out := exactSOS(f, facial = "no"):
+eig(out[3]);
+
+
+# 5 polynomials - Rank 6?
+p1 := x*((2-1/2)*x^2-(y^2+z^2+w^2));
+p2 := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3 := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4 := w*((1)*w^2-(z^2));
+f := p1^2+p2^2+p3^2+p4^2+(w*x*z)^2;
+out := exactSOS(f, facial = "no"):
+eig(out[3]);
+
+###########################################################
+
+# 5 polynomials - Rank 7?
+p1 := x*((2-1/2)*x^2-(z^2+w^2));
+p2 := y*((2-1/2)*y^2-(x^2+z^2+w^2));
+p3 := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4 := w*((1)*w^2-(z^2));
+f := p1^2+p2^2+p3^2+p4^2+(w*x*z)^2;
+out := exactSOS(f, facial = "no"):
+eig(out[3]);
+
+###########################################################
+
+# 5 polynomials - Rank 7?
+p1 := x*((2-1/2)*x^2-(z^2+w^2));
+p2 := y*((2-1/2)*y^2-(x^2+z^2));
+p3 := z*((2-1/2)*z^2-(x^2+y^2+w^2));
+p4 := w*((1)*w^2-(z^2));
+f := p1^2+p2^2+p3^2+p4^2+(w*x*z)^2;
+out := exactSOS(f, facial = "no"):
+eig(out[3]);
+

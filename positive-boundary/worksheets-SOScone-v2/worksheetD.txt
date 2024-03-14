@@ -1,0 +1,324 @@
+######################################################################
+## Section 5.2
+## Polynomials of 5 variables in degree 4
+######################################################################
+
+#######################################################################
+# Load "Rational SOS" procedures
+#######################################################################
+read("rationalSOS.mpl");
+with(rationalSOS);
+with(LinearAlgebra);
+
+# Display tables of any size
+interface(rtablesize=infinity);
+
+#######################################################################
+## Example 5.5 
+## Sum of 5 squares with unique decomposition
+#######################################################################
+
+# The first 4 polynomials correspond to an example of a polynomial 
+# in the non-negative border of the SOS-cone in the 4-4 case.
+# We add a fifth polynomial to produce an example for the 5-4 case.
+p1 := x1^2- x4^2;
+p2 := x2^2- x4^2;
+p3 := x3^2- x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2
+
+# f is the sum of squares of p1, ..., p5
+f := p1^2+p2^2+p3^2+p4^2+p5^2;
+
+# We use SEDUMI to compute a SOS decomposition.
+# With default options, exactSOS will compute a solution of maximum rank
+out := exactSOS(f, facial = "no"):
+
+# out[3] is a matrix in the spectrahedron of maximum rank.
+# We check the eigenvalues to determine the rank
+eig(out[3]);
+
+# There are only 5 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 5.
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1^2+p2^2+p3^2+p4^2+p5^2.
+v := convert(out[5], list):  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1, p2, p3, p4, p5], v):
+A2 := out[3]:
+Norm(A1 - A2);
+
+# We see that both matrices are the same. 
+# This gives strong numerical evidence that this is the unique matrix 
+# in the spectrahedron of f.
+
+
+#######################################################################
+## Example 5.6
+## Sum of 6 squares with unique decomposition
+#######################################################################
+
+# We add a different polynomial f6 to example 4.3
+p1 := x1^2- x4^2;
+p2 := x2^2- x4^2;
+p3 := x3^2- x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x5^2;
+p6 := x1*x5 + x4*x5;
+f := p1^2 + p2^2 + p3^2 + p4^2 + p5^2 + p6^2;
+
+# We use SEDUMI to compute a SOS decomposition.
+# With default options, exactSOS will compute a solution of maximum rank
+
+# We do not compute the polynomail decomposition since it gives an error.
+# (the tools for computing the decomposition in Maple are in a 
+# educational package which is not)
+
+out := exactSOS(f, computePolynomialDecomposition = "no"):
+
+# out[3] is a matrix in the spectrahedron of maximum rank.
+# We check the eigenvalues to determine the rank
+eig(out[3]);
+
+# There are 6 non-zero eigenvalues.
+
+# We compare the matrix obtained by SEDUMI with the matrix corresponding
+# to the original decomposition p1^2+p2^2+p3^2+p4^2+p5^2+p6^2.
+v := convert(out[5], list):  # The monomials indexing the columns of the Gram Matrix
+A1 := decompositionToMatrix([p1, p2, p3, p4, p5, p6], v):
+A2 := roundToIntMatrix(out[3], 6);  # We convert some almost integer values to integers
+Norm(A1 - A2);
+
+# We see that both matrices are the same. 
+# This gives strong numerical evidence that this is the unique matrix 
+# in the spectrahedron of f.
+
+
+#######################################################################
+## Example 5.7
+## Sum of 7 squares with unique decomposition
+#######################################################################
+
+# The first 4 polynomials correspond to an example of a polynomial 
+# in the non-negative border of the SOS-cone in the 4-4 case.
+p1 := x1^2- x4^2;
+p2 := x2^2- x4^2;
+p3 := x3^2- x4^2;
+p4 := -x1^2 - x1*x2 - x1*x3 + x1*x4 - x2*x3 + x2*x4 + x3*x4;
+p5 := x1*x5 + x2*x5;
+p6 := x3*x5 + x2*x5;
+p7 := x5*x5;
+g := p1^2+p2^2+p3^2+p4^2+p5^2+p6^2+p7^2;
+
+out := exactSOS(g, facial = "no"):
+eig(out[3]);
+
+# There are only 7 non-zero eigenvalues, the maximum rank in the
+# spectrahedron is 7.
+
+#######################################################################
+# Quadratic form that vanishes in the 7 polynomials
+
+## By constructing an appropriate bilinear form we show that every polynomial in a decomposition is a sum of
+## p1, p2, p3, p4, x1x5, x2x5, x3x5, x4x5, x5^2
+
+# We construct the list of monomials of degree 2 and 4
+d := 2:
+polVars := [x1,x2,x3,x4,x5]:
+varSum := add(polVars[i], i = 1..nops(polVars)):
+md := expand((varSum)^d):
+cfs := coeffs(md, polVars, 'ctd'):
+print("Monomials of degree d: ", ctd);
+m2d := expand(varSum^(2*d)):
+cfs := coeffs(m2d, polVars, 'ct2d'):
+print("Monomials of degree 2d: ", ct2d);
+
+# A generic square
+aInd := [a[1]]:
+for i from 2 to nops([ctd]) do
+  aInd := [op(aInd), a[i]];
+end do:
+hd := add(aInd[i] * ctd[i], i = 1..nops([ctd]));
+hd_square := hd*hd:
+aa := getCoeffs(expand(hd_square), [ct2d]):
+
+# We compute all the restrictions to phi: A4 -> R given by the seven polynomials. 
+# There are 10 restrictions for each polynomial
+
+pList := [p1, p2, p3, p4, p5, p6, p7];
+M := []:
+for j from 1 to nops(pList) do
+  for i from 1 to nops([ctd]) do
+    p1t := expand(pList[j] * ctd[i]);
+    vec := LinearAlgebra[Transpose](getCoeffs(p1t, [ct2d]));
+    if (nops(M)=0) then
+      M := <vec>;
+    else
+      M := <M,vec>;
+    end if;
+  end do:
+end do:
+
+# We solve the system using only these restrictions
+rc := [Dimension(M)];
+nr := rc[1];
+B:=Vector(nr):
+s:=LinearAlgebra[LinearSolve](M,B):
+varss:=indets(s);
+nops(varss);  # 1 indeterminate left to solve
+
+ew := LinearAlgebra[Transpose](s) . aa:  # The linear form
+oo := polyToMatrixVars(expand(ew), aInd):  
+ooM := oo[1]; # The quadratic form
+
+# Only 1 indeterminate. Any positive value will give a PSD matrix with 9 elements in the kernel
+oEval := eval(ooM, {varss[1] = 1}):
+eig(oEval);
+
+# Polynomials in the kernel
+L := NullSpace(oEval);
+ctdV := convert([ctd], Vector);
+L[1] . ctdV;
+L[2] . ctdV;
+L[3] . ctdV;
+L[4] . ctdV;
+L[5] . ctdV;
+L[6] . ctdV;
+L[7] . ctdV;
+L[8] . ctdV;
+L[9] . ctdV;
+
+# The 9 polynomials in the kernel are
+# p1, p2, p3, p4, x1*x5, x2*x5, x3*x5, x4*x5, x5*x5
+
+# We need to show that a sum of squares of 6 linear combinations of 
+# these polynomials cannot give f.
+
+# The kernel is generated by p1, ...,p4, m1, ..., m5
+m1 := x1*x5;
+m2 := x2*x5;
+m3 := x3*x5;
+m4 := x4*x5;
+m5 := x5*x5;
+
+# We try to decompose as a sum of 6 squares, which must be linear 
+# combinations of the polynomials in the kernel of the quadratic form.
+# Moreover, since the quadratic form is PSD we can assume that the 
+# linear combinations are in triangular shape (see L^TL decomposition).
+
+############################### First step
+
+# We construct the sum of squares and equate the coefficients
+
+q1 := a11*f1+a21*f2+a31*f3+a41*f4+a51*m1+a61*m2+a71*m3+a81*m4+a91*m5;
+q2 :=        a22*f2+a32*f3+a42*f4+a52*m1+a62*m2+a72*m3+a82*m4+a92*m5;
+q3 :=               a33*f3+a43*f4+a53*m1+a63*m2+a73*m3+a83*m4+a93*m5;
+q4 :=                      a44*f4+a54*m1+a64*m2+a74*m3+a84*m4+a94*m5;
+q5 :=                             a55*m1+a65*m2+a75*m3+a85*m4+a95*m5;
+q6 :=                                    a66*m2+a76*m3+a86*m4+a96*m5;
+q := q1^2+q2^2+q3^2+q4^2+q5^2+q6^2;
+
+## We copy the construction of the monomials of degree 2 and 4
+## (to make this verification part independent from the previous parts)
+
+d := 2:
+polVars := [x1,x2,x3,x4,x5]:
+varSum := add(polVars[i], i = 1..nops(polVars)):
+md := expand((varSum)^d):
+cfs := coeffs(md, polVars, 'ctd'):
+m2d := expand(varSum^(2*d)):
+cfs := coeffs(m2d, polVars, 'ct2d'):
+
+cof := getCoeffs(expand(f), [ct2d]):
+cog := getCoeffs(expand(q), [ct2d]):
+
+# List of equations to solve
+eqs := cof-cog:
+eqsList := convert(eqs, list):
+
+# See the Singular file for this step.
+
+############################### Second step
+
+# We get this polynomials in the Greobner basis (among others)
+#J2[1]=a96
+#J2[2]=a95
+#J2[3]=a84
+#J2[4]=a83
+#J2[5]=a82
+#J2[6]=a81
+#J2[7]=a75+a85
+#J2[8]=a74
+#J2[9]=a64
+#J2[10]=a54
+#J2[11]=a73
+#J2[12]=a63
+#J2[13]=a53
+#J2[14]=a43
+#J2[15]=a72
+#J2[16]=a62
+#J2[17]=a52
+#J2[18]=a42
+#J2[19]=a32
+#J2[20]=a71
+#J2[21]=a61
+#J2[22]=a51
+#J2[23]=a41
+#J2[24]=a31
+#J2[25]=a21
+#J2[38]=a44^2-1
+#J2[39]=a33^2-1
+#J2[40]=a22^2-1
+#J2[41]=a11^2-1
+
+# From Singular GB we deduce that we can assume 
+# a11 = a22 = a33 = a44 = 1.
+# (The coefficients must be real, and p^2 = (-p)^2 so we can set the 
+# initial coefficient to be positive.)
+
+# Moreover, we take
+# a96 = a95 = a84 = a83 = a82 = a81 = a74 = a64 = a54 = a73 = a63 = a53 = a43 = a72 = a62 = a52 = a42 = a32 = a71 = a61 = a51 = a41 = a31 = a21 = 0
+# a75 = a85
+
+# The new system is of the shape
+q1 :=     f1                                                 +a91*m5;
+q2 :=            f2                                          +a92*m5;
+q3 :=                   f3                                   +a93*m5;
+q4 :=                          f4                            +a94*m5;
+q5 :=                             a55*m1+a65*m2+a75*m3-a75*m4       ;
+q6 :=                                    a66*m2+a76*m3+a86*m4       ;
+g := q1^2+q2^2+q3^2+q4^2+q5^2+q6^2;
+
+cof := getCoeffs(expand(f), [ct2d]):
+cog := getCoeffs(expand(g), [ct2d]):
+
+# List of equations to solve (in Singular)
+eqs := cof-cog:
+eqsList := convert(eqs, list);
+
+# We use now factorizing GB so that we can split the ideal and get simpler equations.
+# We get three components. The following polynomials are in the components:
+
+# Component 1
+# -88305*a94^8-195112*a94^7-23548*a94^6+262392*a94^5+195112*a94^4-87464*a94^3-171564*a94^2-80736*a94-13456
+
+evalf(allvalues(RootOf(-88305*a94^8-195112*a94^7-23548*a94^6+262392*a94^5+195112*a94^4-87464*a94^3-171564*a94^2-80736*a94-13456)))
+#.9770774009+.3039278136*I, -.4880660791+.2369050395*I, -.7886159441+.3702161294*I, -.8051572825+0.5652380060e-1*I, -.8051572825-0.5652380060e-1*I, -.7886159441-.3702161294*I, -.4880660791-.2369050395*I, .9770774009-.3039278136*I
+
+# Component 2
+# 16*a93^6+8*a93^5-12*a93^4+4*a93^3+4*a93^2-4*a93+1
+
+evalf(allvalues(RootOf(16*a93^6+8*a93^5-12*a93^4+4*a93^3+4*a93^2-4*a93+1)))
+# .4147417705+.1266183578*I, .2932789419+.5202065681*I, -.9580207124+.1190792894*I, -.9580207124-.1190792894*I, .2932789419-.5202065681*I, .4147417705-.1266183578*I
+
+# Component 3
+# 392*a94^6-224*a94^5+32*a94^3+80*a94^2+16
+
+evalf(allvalues(RootOf(392*a94^6-224*a94^5+32*a94^3+80*a94^2+16)))
+# .6950538153+.4666975070*I, 0.4575932903e-1+.4009387055*I, -.4550988586+.3879239341*I, -.4550988586-.3879239341*I, 0.4575932903e-1-.4009387055*I, .6950538153-.4666975070*I
+
+# Non of these polynomials have real roots, so there is no real solution for the problem.
+# f cannot be decomposed as sum of 6 squares.
+
+
+
