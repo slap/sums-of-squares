@@ -14,6 +14,13 @@ Files corresponding to the research paper
 
 Maple and Singular scripts for the computations used in the paper.
 
+## Positive boundary of the SOS cone (positive-boundary).
+
+Files corresponding to the research paper
+["Strictly positive polynomials in the boundary of the SOS cone"].
+
+Maple and Singular scripts for the computations used in the paper.
+
 ## Author
 
 **Santiago Laplagne** - *Instituto de Cálculo, FCEyN, Universidad de Buenos Aires* - [Homepage](http://cms.dm.uba.ar/Members/slaplagn)
