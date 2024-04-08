@@ -203,7 +203,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
     print("Facial reduction results:");
     print("Original matrix - Rank: ", originalRank, " - Number of indeterminates: ", originalDimension);
     print("Matrix after facial reduction - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
-    print(evalf(simplify(MMSE)));
+    print("Matrix MMSE = ", evalf(simplify(MMSE)));
   else 
     MMSE := zeroRows(MMSE);
   end if;
@@ -1189,6 +1189,7 @@ numericSolverSubmatrixRoundBefore := proc(M, d, objFunction)
   local l, subMat, subsub, MApprox;
 
   subsub := linIndepRows(M, d);
+  
   MApprox := evalf(simplify(M));
   MMT, tVars, y := solveSubset(MApprox, subsub, objFunction);
 
