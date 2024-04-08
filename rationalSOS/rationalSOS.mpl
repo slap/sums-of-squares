@@ -205,14 +205,9 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
     print("Matrix after facial reduction - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
     print(evalf(simplify(MMSE)));
   else 
-    %print("Before zeroRows - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
     MMSE := zeroRows(MMSE);
   end if;
   
-  #print("Check 1 of random rank:", randomRank(MMSE));
-  #print("Check 2 of random rank:", randomRank(MMSE));
-  #print("MMSE", MMSE);
- 
   print("Number of indeterminates: ", nops(indets(MMSE)));
   
   if(nops(indets(MMSE)) > 0) then
@@ -234,43 +229,31 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
         print(getExtension(MMSE));
         print("Matrix contains algebraic numbers. They will be rounded to call the numerical solver SEDUMI. You can also try forceRational = \"yes\" for computing an exact rational solution.");
 
-  #      MMSERound := evalf(MMSE);
-  #      rRankRound := randomRank(MMSERound);
-  #      if (rRankRound < rRank) then 
-  #        rRank := rRankRound;
-  #      end if;
-  #      MMT, tVars, ySol := numericSolverSubmatrix(MMSERound, rRank);
-
         MMT, tVars, ySol := numericSolverSubmatrixRoundBefore(MMSE, rRank, objFunction);
 
         yRound := roundVec(ySol, digits);
         yRound := smallToZero(ySol, digits);
         
         MSol := evalMat(MMSE, tVars, yRound);
-        #MSol := evalMat(MMSE, tVars, ySol);
-        
-        #print("Eigenvalues: ", evalf(Eigenvalues(MSol)));
         approxSolution := 1:
       else 
         MMT, tVars, ySol := numericSolverSubmatrix(MMSE, rRank, objFunction);
-        #print("Sedumi solution: ", ySol);
         yRound := roundVec(ySol, digits);
         yRound := smallToZero(ySol, digits);
+
         # Use this instead to convert all small numbers to zero.
         #yRound := smallToZero(ySol, digits);
+
         MSol := evalMat(MMSE, tVars, yRound);
         approxSolution := 0:
       end if;
       
-      #print("Sedumi solution: ", yRound);
-
       if(computePolynomialDecomposition = "yes") then
         if(simplify((expand(LinearAlgebra[Transpose](cfv) . MSol . cfv) - fSimp)) != 0) then
           print("The approximation of the numerical solution is not correct. Try increasing the number of digits in the approximation.");
         else 
           if(approxSolution = 0) then 
             TSol := evalMat(MMT, tVars, yRound);
-            #print("eig(TSol)", eig(TSol));
             solved := LinearAlgebra[IsDefinite](TSol);
           else 
             solved := false;
@@ -285,10 +268,6 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
       else 
         solved := false;
       end if;
-      
-      #print("Computing eigenvalues...");
-      #symEigens := LinearAlgebra[Eigenvalues](MSol);
-      #eigens := evalf(symEigens);
     else
       solved := false;
       print("Problem not solved. Please try enabling numerical optimization via Matlab call to SEDUMI.");
@@ -324,13 +303,6 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
         print("Extension succedeed. An exact SOS decomposition has been found for the input polynomial.");
       end if;
     end if;
-
-#  print("---");
-#  print("SOS a_1 f_1^2 + ... + a_s f_s^2");
-#  print("Coefficients a_i: ");
-#  print(fs[5]);
-#  print("Polynomials f_i: ");
-#  print(fs[6]);
   end if;
   
   if(computePolynomialDecomposition = "yes") then 
@@ -463,8 +435,6 @@ sedumiCallMaxSpectralNorm := proc(A, AVars)
   At_sub := IdentityMatrix(2*nRows);
   matlab_At[1..(2*nRows*2*nRows), nops(AVars)+1] := -convert(At_sub, Vector):
 
-  #LinearAlgebra[Rank](matlab_At);
-  #LinearAlgebra[Rank](zeroTerm);
 
   matlab_bt := Vector(1..(nops(AVars)+1), 0):
   matlab_bt[nops(AVars)+1]:=-1:
@@ -474,8 +444,6 @@ sedumiCallMaxSpectralNorm := proc(A, AVars)
   At_sub[1..nRows, 1..nRows] := -zeroTerm;
   At_sub[(nRows+1)..(2*nRows), (nRows+1)..(2*nRows)] := zeroTerm;
 
-  #LinearAlgebra[Rank](zeroTerm);
-  #matlabMat[nops(AVars)+1, 1..((mSize)*(mSize))] := convert(zeroTerm, Vector);
   matlab_ct := convert(At_sub, Vector):
   
   print("At", Dimension(matlab_At));
@@ -542,9 +510,6 @@ sedumiCallMaxSpectralNormSDP := proc(A, AVars)
   At_sub[1..nRows, 1..nRows] := IdentityMatrix(nRows);
   matlab_At[1..(2*nRows*2*nRows), nops(AVars)+1] := -convert(At_sub, Vector):
 
-  #LinearAlgebra[Rank](matlab_At);
-  #LinearAlgebra[Rank](zeroTerm);
-
   matlab_bt := Vector(1..(nops(AVars)+1), 0):
   matlab_bt[nops(AVars)+1]:=-1:
 
@@ -553,8 +518,6 @@ sedumiCallMaxSpectralNormSDP := proc(A, AVars)
   At_sub[1..nRows, 1..nRows] := -zeroTerm;
   At_sub[(nRows+1)..(2*nRows), (nRows+1)..(2*nRows)] := zeroTerm;
 
-  #LinearAlgebra[Rank](zeroTerm);
-  #matlabMat[nops(AVars)+1, 1..((mSize)*(mSize))] := convert(zeroTerm, Vector);
   matlab_ct := convert(At_sub, Vector):
   
   print("At", Dimension(matlab_At));
@@ -630,7 +593,6 @@ sedumiCallObjective := proc(A, AVars, objFunction)
   end if;
 
   if (objFunction = "minX") then
-    #print("sedumiCallObjective: objFunction = minX");
     matlab_At := Matrix(nRows * nRows, nops(AVars)):
     for i from 1 to nops(AVars) do
       matlab_At[1..(nRows*nRows), i] := -convert(coeff(A, AVars[i]), Vector);
@@ -645,7 +607,6 @@ sedumiCallObjective := proc(A, AVars, objFunction)
   end if;
 
   if (objFunction = "maxX") then
-    #print("sedumiCallObjective: objFunction = maxX");
     matlab_At := Matrix(nRows * nRows, nops(AVars)):
     for i from 1 to nops(AVars) do
       matlab_At[1..(nRows*nRows), i] := -convert(coeff(A, AVars[i]), Vector);
@@ -717,13 +678,7 @@ sedumiCallObjective := proc(A, AVars, objFunction)
   evalM("echo off;"):
   
   # SEDUMI call
-  #print("evalc(sedumi)");
-  #evalM("[x, y, info] = sedumi(At,bt,ct,K,pars);"):
-  
-  #print("SEDUMI OBJECTIVE");
-  
   evalM("[output, x, y, info] = evalc('sedumi(At,bt,ct,K,pars);')"):
-  #[x, y, info];
   x := getvar("x"):
   y := getvar("y"):
   x, y;
@@ -736,12 +691,12 @@ end proc:
 
 solveSubset := proc(A, sub0, objFunction)
   local MMT, tVars, x, y, randomMMT;
-  #print("solveSubset begins");
+
   MMT := LinearAlgebra[SubMatrix](A, sub0, sub0):
   tVars := indets(MMT);
   randomMMT := eval(MMT, Equate([op(tVars)], LinearAlgebra[RandomVector](nops(tVars)))):
   if (LinearAlgebra[Determinant](randomMMT) <> 0) then
-    #print("SEDUMI CALL - Objective function = ", objFunction);
+    print("SEDUMI CALL - Objective function = ", objFunction);
   else 
     print("SEDUMI CALL - zero determinant - Objective function = ", objFunction);
   end if;
@@ -937,9 +892,6 @@ getEquationsTrace := proc(solSym, cfv, MMS, vars, L)
   
   vecTrace := vectorTrace(cfve);
 
-  #print("trace vector: ", vecTrace);
-  #print("vector: ", cfve);
-
   eqMinT := MMS.vecTrace:
 
   allEq := []:
@@ -960,10 +912,10 @@ end proc:
 getEquationsTraceRandom := proc(solSym, cfv, MMS, vars, boundRank)
   local cfve, eqMinT, allEq, i, j, cofT, mSize, out;
   local nVectors, randomSol, checkSol;
-  #print("getEquationsTraceRandom begins");
+
   mSize := LinearAlgebra[Dimension](cfv);
   nVectors := mSize;
-  #nVectors := mSize * 10;
+
   randomSol := randomTraceSolutions(solSym, cfv, vars, nVectors, boundRank):
 
   if(nops(randomSol) > 0) then
@@ -972,9 +924,7 @@ getEquationsTraceRandom := proc(solSym, cfv, MMS, vars, boundRank)
 
       allEq := []:
       for i from 1 to mSize do
-        #print("WHY!?");
         cofT := coeffs(expand(eqMinT[i]), vars);
-
         allEq := [op(allEq), cofT];
       end do:
     end do:
@@ -998,7 +948,6 @@ getEquationsPlain := proc(solSym, cfv, MMS, vars)
 
   allEq := []:
   for i from 1 to mSize do
-    #DEBUG();
     cofT := coeffs(expand(numer(simplify(expand(eqMinT[i])))), vars);
     allEq := [op(allEq), cofT];
   end do:
@@ -1022,19 +971,12 @@ getEquationsPlainRandom := proc(solSym, cfv, MMS, vars, { ratSol::string := "no"
 
   # FIX THIS!!
   # This sets the maximum of vectors to try to reduce the dimension of the 
-  # search space. It should be changed to a some verification that no more
+  # search space. It should be changed to some verification that no more
   # reduction can be obtained.
   #nVectors := mSize * 10;
   nVectors := mSize;
 
-  #print("compute random solutions...");  
   randomSol := randomSolutions(solSym, cfv, vars, nVectors):
-  #print("randomSolutions finished");
-  #print("number of solutions: ", nops(randomSol));
-  
-  #DEBUG();
-  
-  #DEBUG();
 
   if(nops(randomSol) > 0) then
 
@@ -1061,10 +1003,8 @@ getEquationsPlainRandom := proc(solSym, cfv, MMS, vars, { ratSol::string := "no"
           allEqRat := [op(allEqRat), allEq[j]];
         end if;
       end do:
-      #DEBUG();
       out := Equate(allEqRat,Vector(nops(allEqRat))):
     else 
-      #DEBUG();
       if(nops(allEq) > 0) then
         out := Equate(allEq,Vector(nops(allEq))):
       else 
@@ -1072,11 +1012,9 @@ getEquationsPlainRandom := proc(solSym, cfv, MMS, vars, { ratSol::string := "no"
       end if;
     end if:
   else 
-    #print("No real solutions in this branch");
+    # No real solutions in this branch
     out := [];
   end if;
-  #print("getEquationsPlainRandom finished");
-  
   out;
 end proc:
 
@@ -1103,9 +1041,7 @@ nonRatCoef := proc(MMSE, mSize, az)
   eqsCoef := Equate(allCoefEq,Vector(nops(allCoefEq))):
   matC2, vecC2 := LinearAlgebra[GenerateMatrix](eqsCoef,indets(MMSE)):
   LinearAlgebra[Rank](matC2);
-  #print("consistent?");
   sol123C := LinearAlgebra[LinearSolve](matC2, vecC2):
-  #print("yes!");
   solT2 := Equate([op(indets(MMSE))], sol123C):
   out := eval(MMSE, solT2):
   out := simplify(out):
@@ -1123,9 +1059,7 @@ hasExtension := proc(elem)
   for i from 1 to nops(a) do
     if (nops(a[i]) = 1) then
       if (a[i] <> true) then
-        #print(a[i][1]);
         out := 1;
-        #DEBUG();
       end if;
     end if;
   end do:
@@ -1139,7 +1073,6 @@ hasRationalSolution := proc(elem)
   local out, a, i;
   out := 0;
   a := evala(Algfield(elem));
-  #print("has rational: a", a);
   if (a[4]=false) then
     out := 1;
   else 
@@ -1163,13 +1096,11 @@ getExtension := proc(elem)
   end if;
   if(a[4]=true) then
     if (nops(a[3]) = 1) then
-      #print("i, a[i]", i, a[i]);
       out := a[3][1];
     end if;
     if(nops(a[3]) > 1) then
       out := lhs(evala(Primfield(a[3]))[1][1]);
     end if;
-      #print(elem, "- out: ", out);
   else 
     # Fix for some cases where RootOf contain labels
     if(nops(a[3]) > 0) then 
@@ -1178,10 +1109,6 @@ getExtension := proc(elem)
       #out := RootOf(op(out)[1]);
     end if;
   end if;
-#  else
-#    print("a[1]", a[1]);
-#    out := 0;
-#  end if;
   if(debugExtension) then 
     print("Output of extension: ", out);
   end if;
@@ -1222,9 +1149,7 @@ zeroRows := proc(M)
   end do;
 
   matC, vecC := LinearAlgebra[GenerateMatrix](eqsNew,indets(M)):
-  #print("consistent 2?");
   sol123 := LinearAlgebra[LinearSolve](matC, vecC):
-  #print("yes!");
   
   solT := Equate([op(indets(out))], sol123):
   out := eval(out, solT):
@@ -1245,13 +1170,7 @@ solveEquations := proc(M, eqs)
   local out, matC, vecC, sol123, solT;
   matC, vecC := LinearAlgebra[GenerateMatrix](eqs,indets(M)):
 
-  #print("consistent 3?");
-  
-  #print("eqs");
-  #print(eqs);
-  #DEBUG();
   sol123 := LinearAlgebra[LinearSolve](matC, vecC):
-  #print("yes!");
 
   solT := Equate([op(indets(M))], sol123):
   
@@ -1268,42 +1187,9 @@ end proc:
 numericSolverSubmatrixRoundBefore := proc(M, d, objFunction)
   local MMT, tVars, y, subRows, nRows, nCols, ind, i;
   local l, subMat, subsub, MApprox;
-  #print("numericSolverSubmatrix begins");
-  #print("d: ", d);
-  #print("rndRk M: ", randomRank(M));
-
-#  ooo := linIndepRows(M);
-#
-#  DEBUG();
-#
-#  nRows, nCols := LinearAlgebra[Dimension](M);
-#  subRows := [];
-#  for i from 1 to nRows do 
-#    if(emptyRow(M,nRows,i) = 0) then
-#        subRows := [op(subRows),i];
-#    end if
-#  end do;
-#  echo("subrows: ", subRows);
-#
-#  l := listSubsets(subRows, d);
-#
-#  ind := 1;
-#  subMat := LinearAlgebra[SubMatrix](M, l[ind], l[ind]):
-#  rndRk := randomRank(subMat);
-#  print("rndRk", rndRk);
-#  while(rndRk < d) do 
-#    ind := ind + 1;
-#    subMat := LinearAlgebra[SubMatrix](M, l[ind], l[ind]):
-#    rndRk := randomRank(subMat);
-#    print("rndRk", rndRk);
-#  end;
 
   subsub := linIndepRows(M, d);
-
   MApprox := evalf(simplify(M));
-
-  #MMT, tVars, y := solveSubset(MApprox, l[ind]);
-  print("subsub = ", subsub);
   MMT, tVars, y := solveSubset(MApprox, subsub, objFunction);
 
   MMT, tVars, y:
@@ -1317,13 +1203,8 @@ numericSolverSubmatrixMaxRank := proc(M, objFunction)
   local MMT, tVars, y;
   local subsub, d;
 
-  #print("numericSolverSubmatrixRank begins");
-  #print("rndRk M: ", randomRank(M));
-
   d := randomRank(M);
   subsub := linIndepRows(M, d);
-  
-  #print("subsub: ", subsub);
 
   MMT, tVars, y := solveSubset(M, subsub, objFunction);
   MMT, tVars, y:
@@ -1337,9 +1218,6 @@ end proc:
 numericSolverSubmatrix := proc(M, d, objFunction)
   local MMT, tVars, y, subRows, nRows, nCols, ind, i;
   local l, subMat, rndRk, subsub;
-  #print("numericSolverSubmatrix begins");
-  #print("d: ", d);
-  #print("rndRk M: ", randomRank(M));
 
   nRows, nCols := LinearAlgebra[Dimension](M);
   subRows := [];
@@ -1348,24 +1226,9 @@ numericSolverSubmatrix := proc(M, d, objFunction)
         subRows := [op(subRows),i];
     end if
   end do;
-  #echo("subrows: ", subRows);
 
-#  l := listSubsets(subRows, d);
-
-#  ind := 1;
-#  subMat := LinearAlgebra[SubMatrix](M, l[ind], l[ind]):
-#  rndRk := randomRank(subMat);
-#  print("rndRk", rndRk);
-#  while(rndRk < d) do 
-#    ind := ind + 1;
-#    subMat := LinearAlgebra[SubMatrix](M, l[ind], l[ind]):
-#    rndRk := randomRank(subMat);
-#    print("rndRk", rndRk);
-#  end;
-#
-#  MMT, tVars, y := solveSubset(M, l[ind], objFunction);
-  nRows, nCols := LinearAlgebra[Dimension](M);
-  
+  # We compute linear independnt rows only if d < nRows(M)
+  nRows, nCols := LinearAlgebra[Dimension](M);  
   if(d < nRows) then 
     subsub := linIndepRows(M, d);
   else 
@@ -1429,8 +1292,6 @@ hasRealRoot := proc(L)
 
   out := 0;
 
-#  print(L);
-
   # First check
   allV := [evalf(allvalues(L))];
   for i from 1 to nops(allV) do
@@ -1442,8 +1303,6 @@ hasRealRoot := proc(L)
   # Second check
   # Not working when the extension L has a label.
   if (out = 0) then
-    #print("check extension L", L);
-    #DEBUG();
     allV := [fsolve(op(L))];
     print("checked extension L", allV);
     for i from 1 to nops(allV) do
@@ -1452,9 +1311,6 @@ hasRealRoot := proc(L)
       end if:
     end do:
   end if;
-  #print("hasRealRoot output", out);
-  
-#  print(out, "hasRealRoot?" , L);
   
   out;
 end proc:
@@ -1499,7 +1355,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
       else 
         if (printLevel >= 1) then print(" - extension without unknowns") end if;
         eqFace := "indeterminate";
-        #eqFace := "indeterminate";
       end if;
 
       if(eqFace = "random") then
@@ -1520,14 +1375,10 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
         end if:
       end if;
 
-      #print("eqsTrace: ", eqsTrace);
-        
       if(incremental_f = "yes") then
 
         if (printLevel >= 1) then print("Solving trace equations...") end if;
 
-        #print("eqsTrace: ", eqsTrace);
-        
         out := solveEquations(out, eqsTrace):
         out1 := out;
 
@@ -1540,11 +1391,10 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
 
         if(nops(indets(out))>0) then
           if (printLevel >= 1) then print("Zero equations after incremental trace...") end if;
-          #print("out: ", out);
+
           out := zeroRows(out):
           out2 := out;
-          #if (printLevel >= 1) then print("Two by two equations...") end if;
-          #print ("debug - zsd3");
+
           out := zeroDetSRows(out,2):
           out3 := out;
         end if;
@@ -1563,14 +1413,12 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
 
       if(nops(indets(out))>0) then
         if (printLevel >= 1) then print("Zero equations after not incremental trace ...") end if;
-        #print("out", out);
         out := zeroRows(out):
         out2 := out;
+
         if (printLevel >= 1) then print("Two by two equations...") end if;
-        #print ("debug - zsd4");
         out := zeroDetSRows(out,2):
         out3 := out;
-
       end;
     end;
   else 
@@ -1582,7 +1430,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
     print("indets after zero det equations", nops(indets(out)));
   end if;
 
-#if (1=0) then
   if(nops(indets(out))>0) then
     if(eqPlain = "yes") then
       if (printLevel >= 1) then print("Computing plain equations...") end if;
@@ -1591,36 +1438,28 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
         if (printLevel >= 1) then print("plain equation", i) end if;
 
         # We check if the equations contain roots of equations involving the unknowns
-        if(nops(indets(symbSol[i])) > nops(vars)) then
-          #print("DEBUG - extension with unknowns");
+        if(nops(indets(symbSol[i])) > nops(vars)) then  # Extension with unknowns
           eqFace := "random";
-        else 
-          #print("DEBUG - extension WITHOUT unknowns");
+        else # Extension without unknowns
           eqFace := "indeterminate";
         end if;
 
+        # Why we dont use "indeterminate"??
         eqFace := "random";
 
         if(eqFace = "indeterminate") then
           L := getExtension(symbSol[i]);
-          #print("L:", L);
           if (hasRealRoot(L) = 1) then
             if (printLevel >= 1) then print("Real root found") end if;
-            #print("getIndet(symbSol[i])", getIndet(symbSol[i]));
             eqsStep := getEquationsPlain(symbSol[i], cfv, out, getIndet(symbSol[i]));
             eqsPlain := [op(eqsPlain), op(eqsStep)]:
-            #print("new equations: ", nops(eqsStep));
           else 
             if (printLevel >= 1) then print("No real roots, nothing to do.") end if;
           end if;
         else 
-          #L := getExtension(symbSol[i]);
-          #print("Calling getEquationsPlainRandom...");
           eqsStep := getEquationsPlainRandom(symbSol[i], cfv, out, indets(cfv));
           eqsPlain := [op(eqsPlain), op(eqsStep)]:
         end if;
-        #print("eqsPlain");
-        #print(eqsPlain);
 
         if(incremental_f = "yes") then
           if (printLevel >= 1) then print("Solving plain equations (incremental)...") end if;
@@ -1634,7 +1473,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
             out6 := out;
           end if;
           if (printLevel >= 1) then 
-            #print("rank after plain equations: ", randomRank(out));
             print("indets after plain equations", nops(indets(out)));
           end if;
           eqsPlain := [];
@@ -1643,20 +1481,19 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
 
       if(incremental_f = "no") then 
         if (printLevel >= 1) then print("Solving plain equations...") end if;
-        #print(eqsPlain);
         if (nops(eqsPlain) > 0) then 
           out := solveEquations(out, eqsPlain):
         else 
           print("No equations found. Check!");
         end if;
-        print("solve finished 2");
         out4 := out;
       
         if(nops(indets(out))>0) then
           if (printLevel >= 1) then print("Zero equations after non-incremental plain...") end if;
+
           out := zeroRows(out):
           out5 := out;
-          #print ("debug - zsd2");
+
           out := zeroDetSRows(out,2):
           out6 := out;
         end if;
@@ -1668,9 +1505,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
     end if;
   end if;
 
-#end if;
-
-  #print("forceRational_f", forceRational_f);
 
   if(nops(indets(out))>0) then
     # Equate all non-rational coefficients to 0. 
@@ -1678,9 +1512,10 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
     if(forceRational_f = "yes") then 
       if (printLevel >= 1) then print("We force all indeterminates with non-rational coefficients to be 0...") end if;
       L := getExtension(out);
-      #DEBUG();
+
       out := primitiveMatrix(out);
       out6 := out;
+
       out := nonRatCoef(out, nRows, L):
       out7 := out;
     end if;
@@ -1708,11 +1543,9 @@ randomSolutions := proc(solution, cf, vars, n)
   vecs := [];
   cfev := eval(cf, solution);
 
-  #den := commonDenominator(cfev);
   den := productDenominator(cfev);
   if(degree(den)>0) then
     boundRank := 0;
-    #print("degree(den)", den, degree(den))
   else 
     boundRank := 1;
   end if;
@@ -1723,13 +1556,10 @@ randomSolutions := proc(solution, cf, vars, n)
   for j from 1 to nops(indetsCFEV) do
     if(hasExtension(indetsCFEV[j]) = 0) then
       boundRank := 0;
-#      trueIndets := [op(trueIndets), indetsCFEV[j]];
     end if;
   end do;
   
   trueIndets := indetsCFEV;
-  #print("trueIndets", trueIndets);
-
 
   if(nops(indets(cfev)) > 0) then
 
@@ -1738,12 +1568,8 @@ randomSolutions := proc(solution, cf, vars, n)
 
       unassign('cfNames');
       for i from 1 to LinearAlgebra[Dimension](cfev) do
-        #print('cfev[i]', i, cfev[i]);
-        #print('indets(cfev)', i, indets(cfev));
         
         coefList := coeffs(cfev[i], trueIndets, 'cfNames'):
-        #print("coefList", coefList);
-        #print("cfNames", cfNames);
         cfNamesList := [cfNames];
         if(nops(indets(cfNames)) > 0) then 
           for j from 1 to nops(cfNamesList) do
@@ -1755,8 +1581,6 @@ randomSolutions := proc(solution, cf, vars, n)
         unassign('cfNames');
       end do:
       
-      #print("monomials", monomials);
-
       expectedRank := nops(convert(monomials,set));
       if (expectedRank > n) then
         expectedRank := n;
@@ -1765,22 +1589,17 @@ randomSolutions := proc(solution, cf, vars, n)
       expectedRank := n;
     end;
 
-    #print("expectedRank", expectedRank);
-
     mSize := LinearAlgebra[Dimension](cfev);
     first := 1;
     i := 0;
     nrank := 0:
 
-    #print("This will go on until i = ", n);
 
     while ((i <= n) and (nrank < expectedRank)) do
       rv := LinearAlgebra[RandomVector](nops(vars)):
       rvEval := Equate(Vector([op(vars)]), LinearAlgebra[RandomVector](nops(vars)));
       if(eval(den, rvEval) <> 0) then
-        #randomSol := eval(cfev, Equate(Vector([op(vars)]), LinearAlgebra[RandomVector](nops(vars), density=1))):
         randomSol := eval(cfev, rvEval):
-        #print("DEBUG - randomSol", randomSol);
         if (hasRealRoot(getExtension(randomSol)) = 1) then
           if(first = 1) then
             MNew := randomSol;
@@ -1788,10 +1607,7 @@ randomSolutions := proc(solution, cf, vars, n)
           else 
             MNew := <M|randomSol>;
           end if;
-          #print("Lets compute the rank...");
-          #nrankNew := LinearAlgebra[Rank](MNew);
           nrankNew := LinearAlgebra[Rank](evalf(MNew));
-          #print("Computed! Rank = ", nrankNew);
           if (nrankNew > nrank) then
             vecs := [op(vecs), randomSol];
             M := MNew;
@@ -1800,7 +1616,6 @@ randomSolutions := proc(solution, cf, vars, n)
         end if;
       end if;
       i := i + 1;
-      #print("i = ", i);
     end do:
   else 
     # The provided solution has no indeterminates to specify
@@ -1825,15 +1640,11 @@ randomTraceSolutions := proc(solution, cf, vars, n)
 
   local boundRank, den, rv, rvEval;
 
-  #print("randomTraceSolution begins");
-  #print("started");
-
   vecs := [];
   cfev := eval(cf, solution);
-  #DEBUG();
-  #den := commonDenominator(cfev);
+
   den := productDenominator(cfev);
-  #print("den", den);
+
   if(degree(den)>0) then
     boundRank := 0;
   else 
@@ -1865,11 +1676,9 @@ randomTraceSolutions := proc(solution, cf, vars, n)
   else 
     expectedRank := n;
   end if;
-  #print("expectedRank for random solutions", expectedRank);
 
   # Choose a better m!!
   m := 5*n;
-  #print("m = 5*n -->", m);
 
   first := 1;
   i := 0;
@@ -1894,9 +1703,7 @@ randomTraceSolutions := proc(solution, cf, vars, n)
             MNew := <M|vecTrace>;
           end if;
           nrankNew := LinearAlgebra[Rank](MNew);
-          #print("rank achieved: ", nrankNew);
           if (nrankNew > nrank) then
-            #print("vecTrace", vecTrace);
             vecs := [op(vecs), vecTrace];
             M := MNew;
             nrank := nrankNew;
@@ -1904,12 +1711,9 @@ randomTraceSolutions := proc(solution, cf, vars, n)
         end if:
       end if:
       i := i + 1;
-      #print("i inside randomTraceSolutions:", i)
     end if;
   end do:
 
-  #print("final rank achieved: ", nrankNew);
-  #print(vecs);
   vecs;
 end proc:
 
@@ -1924,7 +1728,6 @@ matrixToPoly := proc(Q,v)
   local L, DD, Lt, aD, aDsorted;
   local cFail, nRows, nCols;
 
-  #print("matrixToPoly begins...");
   # Check if conditions are met for SOS decomposition
   if(nops(indets(Q))> 0) then
     print("The computed Matrix contains indeterminates. SOS decomposition cannot be computed.");
@@ -1954,13 +1757,11 @@ matrixToPoly := proc(Q,v)
       print("Computing Cholesky decomposition...");  
       L, Lt := MatrixDecomposition(Q, method = Cholesky);
       DD := IdentityMatrix(nCols);
-      #print("Decomposition computed!");  
     catch:
       print("Cholesky decomposition failed. Matrix is not positive definite. We use LDLt decomposition.");
       try
         L, DD, Lt := MatrixDecomposition(Q, method = LDLt);
       catch: 
-        #print("Matrix decomposition failed for output matrix. Please check!. Q = ", Q);
         print("Matrix decomposition failed for output matrix. Please check!");
         L := IdentityMatrix(nCols);
         DD := Q;
@@ -1970,8 +1771,6 @@ matrixToPoly := proc(Q,v)
     
     aD := getDiag(DD);
     aDsorted := sort(abs(evalf(Vector(aD))), `>`, output = ['permutation']);
-
-    #P2, L2, U2 := LinearAlgebra[LUDecomposition](mat2, method = 'GaussianElimination');
 
     n := LinearAlgebra[Rank](Q);
     p:=[];
@@ -2019,9 +1818,7 @@ polyToMatrix := proc(f)
   # to v^t MM v = o3
   rr := [coeffs(ex-fExp, vars)]:
   
-  #DEBUG();
   sol := solve(Equate(rr,Vector(nops(rr)))):
-  #DEBUG();
   MMS := eval(MM, sol):
   mVars := indets(MMS);
   MMS, mVars, cfPlain;
@@ -2061,44 +1858,25 @@ zeroDetSRows := proc(M, s)
   eqsNew := [];
   vNonZero := [seq(`if`(M[i,i]=0,NULL,i), i=1..nRows)];
   l := listSubsets(vNonZero, s);
-
-  #print("hello");
-  #print("nRows: ", nRows);
-  #print("l: ", l);
   
   for i from 1 to nops(l) do
-    #print("l[i]: ", l[i]);
     MSub := LinearAlgebra[SubMatrix](M, l[i], l[i]):
-    #print("valid");    
     if(randomRank(MSub) < s) then
-      #print("randomRank valid");
       v := Vector(nRows);
       kern:=LinearAlgebra[NullSpace](MSub);
-      #print("MSub: ", MSub);
-      #print("kern: ", kern, MSub);
       if(nops(kern) > 0) then 
         vKern := cancelDenominator(kern[1]);
-        #v[l[i]] := kern[1];
-        #print("simplify(MSub.vKern)", simplify(MSub.vKern));
         v[l[i]] := vKern;
-        #print("Invalid subscript?");
         eqs := M.v;
         eqsNew := [op(eqsNew), op(Equate(eqs, Vector(nRows)))]:
-        #print("eqsNew passed");
       end if;
-    #else 
-    #  print("no randomRank");
     end if;
   end do:
  
   if(nops(eqsNew) > 0) then
-    #print("eqsNew", eqsNew);
-    #print("indets(M)", indets(M));
     matC, vecC := LinearAlgebra[GenerateMatrix](eqsNew,indets(M)):
     
-    #print("consistent? 4");
     sol123 := LinearAlgebra[LinearSolve](matC, vecC):
-    #print("yes!");
     
     solT := Equate([op(indets(M))], sol123):
     out := eval(M, solT):
@@ -2160,18 +1938,13 @@ reduceByLinearEquation := proc(M, v)
   nRows, nCols := LinearAlgebra[Dimension](M);
   
   eqs := Equate(M.v, Vector(nCols));
-  #print("eqs", eqs);
 
   solEq := solve(eqs);
 
   matC2, vecC2 := LinearAlgebra[GenerateMatrix](eqs,indets(eqs)):
   
-  #print("consistent? 5");
   solLinear := LinearAlgebra[LinearSolve](matC2, vecC2):
-  #print("yes!");
 
-  #DEBUG();
-  #print(solEq);
   out := eval(M, solEq);
 end proc:
 
@@ -2183,18 +1956,14 @@ reduceByLinearEquationLinear := proc(M, v)
   nRows, nCols := LinearAlgebra[Dimension](M);
   
   eqs := Equate(M.v, Vector(nCols));
-  #print("eqs", eqs);
 
   eqs := simplify(eqs);
   matC2, vecC2 := LinearAlgebra[GenerateMatrix](eqs,indets(eqs)):
 
-  #print("consistent? 6");
   solLinear := LinearAlgebra[LinearSolve](matC2, vecC2):
-  #print("yes!");
   
   solT2 := Equate([op(indets(eqs))], solLinear):
 
-  #print(solEq);
   out := eval(M, solT2);
 end proc:
 
@@ -2314,16 +2083,11 @@ linIndepRows := proc(M, rRank := -1)
   local i, nRows, nCols;
   local rndRank, subind, MSub, subsub;
   
-  print("rRank", rRank);
-  
-  #rndRank := randomRank(M);  2023-07-26
   if(rRank = -1) then 
     rndRank := randomRank(evalf(M));  
   else
     rndRank := rRank;
   end if;
-  
-  print("rndRank", rndRank);
   
   nRows, nCols := LinearAlgebra[Dimension](M);
   
@@ -2331,12 +2095,9 @@ linIndepRows := proc(M, rRank := -1)
   while(nops(subind) > rndRank) do
     for i from 1 to nops(subind) do
       subsub := subsop(i=NULL, subind);
-      #print("subsub", subsub);
       MSub := SubMatrix(M, subsub, subsub);
-      #if(randomRank(MSub) = rndRank) then
       if(randomRank(evalf(MSub)) = rndRank) then
         subind := subsub;
-        #print("MSub", MSub);
         break;
       end if;
     end do:
@@ -2356,7 +2117,6 @@ solveSubmatrixGeneral := proc(M, vv)
   nRows, nCols := LinearAlgebra[Dimension](M);
 
   Q4S3 := SubMatrix(Q4, vv,vv):
-  #indets(Q4S3); # {a_0[4, 6], a_0[7, 9]}
   vx := Vector(nops(vv));
   for i from 1 to nops(vv) do
     vx[i] := z[i];
@@ -2369,9 +2129,8 @@ solveSubmatrixGeneral := proc(M, vv)
   # For this, we compute the coefficient of each of the two parameters and the independent term.
 
   fco := coeffs(ff, indets(Q4));
-  # We get a sytem of the polynomial equations in (z0, z1, z2) and we solve it using command solve.
 
-  #fco := -z8*z10+z9^2, -z7*z10+z8*z9, -z5*z10+z6*z9, -z4*z10+z5*z9, -z2*z10+z3*z9, -z7*z9+z8^2, -z4*z10+z6*z8,-z4*z9+z5*z8,-z2*z9+z3*z8,-z4*z9+z6*z7,-z4*z8+z5*z7,-z2*z8+z3*z7,-z3*z10+z6^2,-z2*z10+z5*z6,-z2*z9+z4*z6,-z1*z10+z3*z6,-z1*z9+z2*z6,-z2*z9+z5^2,-z2*z8+z4*z5,-z1*z9+z3*z5,-z1*z8+z2*z5,-z2*z7+z4^2,-z1*z8+z3*z4,-z1*z7+z2*z4,-z1*z6+z3^2,-z1*z5+z2*z3,-z1*z4+z2^2,9*z1^2-8*z1*z4-8*z1*z6-8*z2*z7+24*z2*z9-8*z3*z10+9*z7^2-8*z7*z9-8*z8*z10+9*z10^2;
+  # We get a sytem of the polynomial equations in (z0, z1, z2) and we solve it using command solve.
   newS := solve(Equate([fco], Vector(nops([fco]))));
 
   vFull := Vector(nRows);
@@ -2381,12 +2140,9 @@ solveSubmatrixGeneral := proc(M, vv)
   end do:
   
   vecs := [];
-#  print("newS: ", newS, "vFull:", vFull);
-#  print("nops(news): ", nops([newS]));
   for i from 1 to nops([newS]) do
     vecs := [op(vecs), eval(vFull, [newS][i])];
   end;
-  #vFull := eval(vFull, newS);
 
   [[fco], [newS], vecs];
 end proc;
@@ -2447,10 +2203,7 @@ polyToMatrixVars := proc(f, cfPlain)
   # to v^t MM v = o3
   rr := [coeffs(ex-fExp, cfPlain, 'cft')]:
   
-  #DEBUG();
   sol := solve(Equate(rr,Vector(nops(rr))), indets(MM)):
-  #print(Equate(rr,Vector(nops(rr))));
-  #DEBUG();
   MMS := eval(MM, sol):
   mVars := indets(MMS);
   MMS, mVars, cfPlain;
@@ -2459,9 +2212,7 @@ end proc:
 # Computes the minors of given size
 minorsDet := proc(A, n0, d)
   local l, i, m;
-  #print(1);
   l := listSubsets([seq(i,i=1..n0)], d);
-  #print(l);
   m := [];
   for i from 1 to nops(l) do
     m := [op(m), Determinant(LinearAlgebra[SubMatrix](A, l[i], l[i]))];
@@ -2500,28 +2251,18 @@ solveToZero := proc(A, B, d)
   eqs := [];
   for i from 1 to ncols do
     for j from i to nrows do
-      #eqs := [];
       if (nops(indets(Bt[i,j])) > 0) then
         if((abs(frac(A[i,j]))<10^(d*(-1))) or (abs(1-frac(A[i,j]))<10^(d*(-1)))) then 
-          #a := round(A[i,j]);
           a := rrounde(A[i,j], d);
-          #print("a", i,j, A[i, j], evalf(A[i,j]), a);
-          #eqs := [op(eqs), op(Equate([B[i, j]], [a]))]:
           eqs := Equate([Bt[i, j]], [a]):
-        #elif (i = j) then
         else 
           a := rrounde(A[i,j], d);
-          #print("b", i,j,A[i,j],evalf(A[i,j]), a);
-          #eqs := [op(eqs), op(Equate([B[i, j]], [a]))]:
           eqs := Equate([Bt[i, j]], [a]):
         end if;
         if (nops(eqs) > 0) then 
           ss := solve(eqs);
           if (nops(ss) > 0) then 
-            #print("eval", ss);
             Bt := eval(Bt, solve(eqs));
-            #print("indets: ", nops(indets(Bt)));
-            #print("rank: ", randomRank(Bt));
           end if;
         end if;
       end if;
