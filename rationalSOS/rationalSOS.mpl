@@ -196,10 +196,9 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
 
   if (printLevel >= 5) then print("After plain equations") end if;
   
-  if(facial = "yes") then
-  
-    rRank := randomRank(MMSE);
+  rRank := randomRank(MMSE);
 
+  if(facial = "yes") then
     print("-----");
     print("Facial reduction results:");
     print("Original matrix - Rank: ", originalRank, " - Number of indeterminates: ", originalDimension);
@@ -230,7 +229,9 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
       openlink();
 
       print("Calling numerical solver SEDUMI to find the values of the remaining indeterminates...");
-      if((facial <> "yes") or (getExtension(MMSE)<>0)) then
+
+      if(getExtension(MMSE)<>0) then
+        print(getExtension(MMSE));
         print("Matrix contains algebraic numbers. They will be rounded to call the numerical solver SEDUMI. You can also try forceRational = \"yes\" for computing an exact rational solution.");
 
   #      MMSERound := evalf(MMSE);
@@ -264,7 +265,6 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
       #print("Sedumi solution: ", yRound);
 
       if(computePolynomialDecomposition = "yes") then
-
         if(simplify((expand(LinearAlgebra[Transpose](cfv) . MSol . cfv) - fSimp)) != 0) then
           print("The approximation of the numerical solution is not correct. Try increasing the number of digits in the approximation.");
         else 
@@ -708,10 +708,11 @@ sedumiCallObjective := proc(A, AVars, objFunction)
   evalM("p = length(bt);");
   evalM("K.s = nRows;");
   
-  #evalM("pars.maxiter=100;");
-  #evalM("pars.bigeps=.000001;");
-  #evalM("pars.alg=1;");
-  #evalM("pars.stepdif=0;");
+  # Remove this optional parameters
+  evalM("pars.maxiter=100;");
+  evalM("pars.bigeps=.000001;");
+  evalM("pars.alg=1;");
+  evalM("pars.stepdif=0;");
   
   evalM("echo off;"):
   
@@ -1297,11 +1298,12 @@ numericSolverSubmatrixRoundBefore := proc(M, d, objFunction)
 #    print("rndRk", rndRk);
 #  end;
 
-  subsub := linIndepRows(M);
+  subsub := linIndepRows(M, d);
 
   MApprox := evalf(simplify(M));
 
   #MMT, tVars, y := solveSubset(MApprox, l[ind]);
+  print("subsub = ", subsub);
   MMT, tVars, y := solveSubset(MApprox, subsub, objFunction);
 
   MMT, tVars, y:
@@ -1313,12 +1315,13 @@ end proc:
 #########################################################################
 numericSolverSubmatrixMaxRank := proc(M, objFunction)
   local MMT, tVars, y;
-  local subsub;
+  local subsub, d;
 
   #print("numericSolverSubmatrixRank begins");
   #print("rndRk M: ", randomRank(M));
 
-  subsub := linIndepRows(M);
+  d := randomRank(M);
+  subsub := linIndepRows(M, d);
   
   #print("subsub: ", subsub);
 
@@ -1361,9 +1364,13 @@ numericSolverSubmatrix := proc(M, d, objFunction)
 #  end;
 #
 #  MMT, tVars, y := solveSubset(M, l[ind], objFunction);
-
-  subsub := linIndepRows(M);
-  #print("step 1");
+  nRows, nCols := LinearAlgebra[Dimension](M);
+  
+  if(d < nRows) then 
+    subsub := linIndepRows(M, d);
+  else 
+    subsub := [seq(i, i = 1 .. nRows)];
+  end;
   MMT, tVars, y := solveSubset(M, subsub, objFunction);
 
   MMT, tVars, y:
@@ -2303,14 +2310,20 @@ end proc:
 
 # Find a set of indices of rows of M such that the square submatrix
 # on those indices has maximal rank.
-linIndepRows := proc(M)
+linIndepRows := proc(M, rRank := -1)
   local i, nRows, nCols;
   local rndRank, subind, MSub, subsub;
   
-  #rndRank := randomRank(M);  2023-07-26
-  rndRank := randomRank(evalf(M));  
+  print("rRank", rRank);
   
-  #print("rndRank", rndRank);
+  #rndRank := randomRank(M);  2023-07-26
+  if(rRank = -1) then 
+    rndRank := randomRank(evalf(M));  
+  else
+    rndRank := rRank;
+  end if;
+  
+  print("rndRank", rndRank);
   
   nRows, nCols := LinearAlgebra[Dimension](M);
   
