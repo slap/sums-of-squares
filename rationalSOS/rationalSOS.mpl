@@ -203,7 +203,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
     print("Facial reduction results:");
     print("Original matrix - Rank: ", originalRank, " - Number of indeterminates: ", originalDimension);
     print("Matrix after facial reduction - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
-    print("Matrix MMSE = ", evalf(simplify(MMSE)));
+    %print("Matrix MMSE = ", evalf(simplify(MMSE)));
   else 
     MMSE := zeroRows(MMSE);
   end if;
@@ -236,7 +236,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
         
         MSol := evalMat(MMSE, tVars, yRound);
         approxSolution := 1:
-      else 
+      else
         MMT, tVars, ySol := numericSolverSubmatrix(MMSE, rRank, objFunction);
         yRound := roundVec(ySol, digits);
         yRound := smallToZero(ySol, digits);
@@ -1231,7 +1231,9 @@ numericSolverSubmatrix := proc(M, d, objFunction)
   # We compute linear independnt rows only if d < nRows(M)
   nRows, nCols := LinearAlgebra[Dimension](M);  
   if(d < nRows) then 
+    print("COMPUTE INDEP ROWS");
     subsub := linIndepRows(M, d);
+    print("COMPUTATION FINISHED");
   else 
     subsub := [seq(i, i = 1 .. nRows)];
   end;
@@ -2084,6 +2086,11 @@ linIndepRows := proc(M, rRank := -1)
   local i, nRows, nCols;
   local rndRank, subind, MSub, subsub;
   
+  print("M = ", evalf(M));
+  
+  
+  print("randomRank(evalf(M)):", randomRank(evalf(M)));
+  
   if(rRank = -1) then 
     rndRank := randomRank(evalf(M));  
   else
@@ -2091,18 +2098,37 @@ linIndepRows := proc(M, rRank := -1)
   end if;
   
   nRows, nCols := LinearAlgebra[Dimension](M);
+
+  print("linindeprows", rRank, nRows);
+  
+  reductionFound := 0; # We check if we can find a row that is dependent
   
   subind :=  [seq(i, i = 1 .. nRows)];
   while(nops(subind) > rndRank) do
     for i from 1 to nops(subind) do
+      print("i = ", i);
       subsub := subsop(i=NULL, subind);
       MSub := SubMatrix(M, subsub, subsub);
-      if(randomRank(evalf(MSub)) = rndRank) then
+      #submatRank := randomRank(evalf(MSub));
+      submatRank := randomRank(MSub);
+      print("randomRank(evalf(MSub)):", randomRank(evalf(MSub)));
+      print("submatRank:", submatRank);
+      if(submatRank = rndRank) then
         subind := subsub;
+        reductionFound := 1;
         break;
       end if;
     end do:
+    if (reductionFound = 0) then
+      print("No reduction found, numerical problems encountered.");
+      break;
+    end if;
   end do:
+  
+  # We check no reduction...
+  subind :=  [seq(i, i = 1 .. nRows)];
+  
+  print("subind: ", subind);
   subind;
 end proc:
 
