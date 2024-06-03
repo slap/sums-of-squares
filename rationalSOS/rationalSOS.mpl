@@ -196,7 +196,12 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
 
   if (printLevel >= 5) then print("After plain equations") end if;
   
-  rRank := randomRank(MMSE);
+  # This is preferred but can be very slow
+  #rRank := randomRank(MMSE);
+  
+  rRank := randomRank(evalf(MMSE));
+  
+  
 
   if(facial = "yes") then
     print("-----");
@@ -1497,11 +1502,15 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           out := zeroRows(out):
           out5 := out;
 
-          out := zeroDetSRows(out,2):
-          out6 := out;
+          if (printLevel >= 1) then print("Zero determinant equations after non-incremental plain...") end if;
+
+          # We skip this because it takes too long...
+          #out := zeroDetSRows(out,2):
+          #out6 := out;
         end if;
         if (printLevel >= 1) then 
-          print("rank after plain equations: ", randomRank(out));
+          print("--Results");
+          print("rank after plain equations: ", randomRank(evalf(out)));
           print("indets after plain equations", nops(indets(out)));
         end if;
       end;
@@ -1526,6 +1535,8 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
     if (printLevel >= 1) then print("Zero equations...") end if;
     out := zeroRows(out):
   end if;
+
+  if (printLevel >= 1) then print("Facial reduction finished.") end if;
 
   out;
 end proc:
@@ -2086,7 +2097,7 @@ linIndepRows := proc(M, rRank := -1)
   local i, nRows, nCols;
   local rndRank, subind, MSub, subsub;
   
-  print("M = ", evalf(M));
+  #print("M = ", evalf(M));
   
   
   print("randomRank(evalf(M)):", randomRank(evalf(M)));
@@ -2108,11 +2119,12 @@ linIndepRows := proc(M, rRank := -1)
     for i from 1 to nops(subind) do
       print("i = ", i);
       subsub := subsop(i=NULL, subind);
+
       MSub := SubMatrix(M, subsub, subsub);
-      #submatRank := randomRank(evalf(MSub));
       submatRank := randomRank(MSub);
-      print("randomRank(evalf(MSub)):", randomRank(evalf(MSub)));
-      print("submatRank:", submatRank);
+
+      #print("randomRank(evalf(MSub)):", randomRank(evalf(MSub)));
+      #print("submatRank:", submatRank);
       if(submatRank = rndRank) then
         subind := subsub;
         reductionFound := 1;
@@ -2125,8 +2137,6 @@ linIndepRows := proc(M, rRank := -1)
     end if;
   end do:
   
-  # We check no reduction...
-  subind :=  [seq(i, i = 1 .. nRows)];
   
   print("subind: ", subind);
   subind;
