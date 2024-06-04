@@ -1174,10 +1174,16 @@ end proc:
 solveEquations := proc(M, eqs)
   local out, matC, vecC, sol123, solT;
   matC, vecC := LinearAlgebra[GenerateMatrix](eqs,indets(M)):
+  if (printLevel >= 1) then print("matrix generated") end if;
 
   sol123 := LinearAlgebra[LinearSolve](matC, vecC):
+  
+  if (printLevel >= 1) then print("sol123 computed") end if;
+
 
   solT := Equate([op(indets(M))], sol123):
+  
+  if (printLevel >= 1) then print("solT computed") end if;
   
   out := eval(M, solT):
   out;
@@ -1455,6 +1461,8 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
         # Why we dont use "indeterminate"??
         eqFace := "random";
 
+        if (printLevel >= 1) then print("Step 1") end if;
+
         if(eqFace = "indeterminate") then
           L := getExtension(symbSol[i]);
           if (hasRealRoot(L) = 1) then
@@ -1468,6 +1476,8 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           eqsStep := getEquationsPlainRandom(symbSol[i], cfv, out, indets(cfv));
           eqsPlain := [op(eqsPlain), op(eqsStep)]:
         end if;
+
+        if (printLevel >= 1) then print("Step 2") end if;
 
         if(incremental_f = "yes") then
           if (printLevel >= 1) then print("Solving plain equations (incremental)...") end if;
@@ -1486,6 +1496,9 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           eqsPlain := [];
         end;
       end do:
+      
+      if (printLevel >= 1) then print("Step 3") end if;
+
 
       if(incremental_f = "no") then 
         if (printLevel >= 1) then print("Solving plain equations...") end if;
@@ -1495,6 +1508,8 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           print("No equations found. Check!");
         end if;
         out4 := out;
+
+        if (printLevel >= 1) then print("Step 4") end if;
       
         if(nops(indets(out))>0) then
           if (printLevel >= 1) then print("Zero equations after non-incremental plain...") end if;
