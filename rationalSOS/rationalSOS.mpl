@@ -198,12 +198,15 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   
   rRank := randomRank(MMSE);
 
+  # Remove
+  rRank := randomRank(evalf(MMSE));
+
   if(facial = "yes") then
     print("-----");
     print("Facial reduction results:");
     print("Original matrix - Rank: ", originalRank, " - Number of indeterminates: ", originalDimension);
     print("Matrix after facial reduction - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
-    print("Matrix MMSE = ", evalf(simplify(MMSE)));
+    #print("Matrix MMSE = ", evalf(simplify(MMSE)));
   else 
     MMSE := zeroRows(MMSE);
   end if;
@@ -694,6 +697,9 @@ solveSubset := proc(A, sub0, objFunction)
 
   MMT := LinearAlgebra[SubMatrix](A, sub0, sub0):
   tVars := indets(MMT);
+  
+  print("tVars = ", tVars);
+  
   randomMMT := eval(MMT, Equate([op(tVars)], LinearAlgebra[RandomVector](nops(tVars)))):
   if (LinearAlgebra[Determinant](randomMMT) <> 0) then
     print("SEDUMI CALL - Objective function = ", objFunction);
@@ -1235,6 +1241,9 @@ numericSolverSubmatrix := proc(M, d, objFunction)
   else 
     subsub := [seq(i, i = 1 .. nRows)];
   end;
+  
+  #DEBUG
+  print("subsub = ", subsub);
   MMT, tVars, y := solveSubset(M, subsub, objFunction);
 
   MMT, tVars, y:
