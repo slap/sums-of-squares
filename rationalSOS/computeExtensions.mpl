@@ -1,7 +1,7 @@
-rationalSOS := module()
+computeExtensions := module()
 description "Tools for exact sum of squares decomposition";
 option package;
-export computeExtension;
+export computeExtensionDeg5;
 
 
 # Given values of the coefficientes, computes four polynomials with coefficients in an algebraic
@@ -69,3 +69,6 @@ computeExtensionDeg5 := proc(s)
 
   [f, fh, {p1ss, p2ss, p3ss, p4ss}, [sSym]];
 end proc:
+
+
+end module; # computeExtensions
