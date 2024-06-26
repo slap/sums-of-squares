@@ -10,6 +10,9 @@ export computeExtensionDeg5;
 computeExtensionDeg5 := proc(s)
   local p1, p2, p3, p4, p1s, p2s, p3s, p4s, p1ss, p2ss, p3ss, p4ss;
   local mp, fGeneric, f2, f3, lf, sSym1, sSym, ss, ssDen;
+  
+  local f, fh;
+  
   # We define a polynomial z as the sum of three squares in an algebraic
   # extension of degree 3 with generic coefficients.
 

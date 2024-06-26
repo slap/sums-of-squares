@@ -1314,12 +1314,15 @@ hasRealRoot := proc(L)
   # Not working when the extension L has a label.
   if (out = 0) then
     allV := [fsolve(op(L))];
-    print("checked extension L", allV);
-    for i from 1 to nops(allV) do
-      if (Im(allV[i])=0) then 
-        out := 1;
-      end if:
-    end do:
+    if (nops(allV) > 0) then
+      print("checked extension - output of fsolve: ", allV);
+      for i from 1 to nops(allV) do
+        if (Im(allV[i])=0) then 
+          out := 1;
+          print("checked extension - algebrail extension L = ", L);
+        end if:
+      end do:
+    end if;
   end if;
   
   out;
