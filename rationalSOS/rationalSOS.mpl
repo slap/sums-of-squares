@@ -947,17 +947,31 @@ end proc:
 
 getEquationsPlain := proc(solSym, cfv, MMS, vars)
   local cfve, eqMinT, allEq, i, cofT, mSize, out, solCheck;
+
+  print("here A1");
+
   mSize := LinearAlgebra[Dimension](cfv);
+
+  print("here A2");
+
 
   cfve := eval(cfv, solSym):
   eqMinT := MMS.cfve:
+  
+  print("here A3 - mSize = ", mSize);
 
   allEq := []:
   for i from 1 to mSize do
     cofT := coeffs(expand(numer(simplify(expand(eqMinT[i])))), vars);
     allEq := [op(allEq), cofT];
+    print("i = ", i);
   end do:
+
+  print("here A4");
+
   out := Equate(allEq,Vector(nops(allEq))):
+  
+  print("here A5");
   out;
 end proc:
 
@@ -1304,6 +1318,8 @@ hasRealRoot := proc(L)
 
   out := 0;
 
+  if (1 = 0) then
+  
   # First check
   allV := [evalf(allvalues(L))];
   for i from 1 to nops(allV) do
@@ -1312,6 +1328,9 @@ hasRealRoot := proc(L)
     end if:
   end do:
 
+
+  print("First check result: ", out);
+  
   # Second check
   # Not working when the extension L has a label.
   if (out = 0) then
@@ -1327,6 +1346,12 @@ hasRealRoot := proc(L)
       end do:
     end if;
   end if;
+  
+  end if;
+  
+  out := 1;
+  
+  print("finished!");
   
   out;
 end proc:
@@ -1380,6 +1405,7 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
       else 
         L := getExtension(symbSol[i]):
         if (hasRealRoot(L) = 1) then
+          print("HERE 10");
           if (L <> 0) then 
             thisEq := op(getEquationsTrace(symbSol[i], cfv, out, vars, L));
             eqsTrace := [op(eqsTrace), thisEq]:
@@ -1390,6 +1416,8 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           print("no real roots in this solution, please check...", L);
         end if:
       end if;
+
+print("HERE 1");
 
       if(incremental_f = "yes") then
 
@@ -1416,6 +1444,8 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
         end if;
       end if;
     end do:
+
+print("HERE 2");
 
     if(incremental_f = "no") then
       if (printLevel >= 1) then print("Solving trace equations...") end if;
@@ -1452,7 +1482,7 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
       eqsPlain := []; 
       for i from 1 to nops(symbSol) do
         if (printLevel >= 1) then print("plain equation", i, ": ", symbSol[i]) end if;
-if ((i = 1) or (i = 4)) then
+
         # We check if the equations contain roots of equations involving the unknowns
         if(nops(indets(symbSol[i])) > nops(vars)) then  # Extension with unknowns
           eqFace := "random";
@@ -1467,9 +1497,11 @@ if ((i = 1) or (i = 4)) then
         if(eqFace = "indeterminate") then
           L := getExtension(symbSol[i]);
           if (hasRealRoot(L) = 1) then
+            print("HERE 11");
+            print("printLevel", printLevel);
             if (printLevel >= 1) then print("Real root found") end if;
             eqsStep := getEquationsPlain(symbSol[i], cfv, out, getIndet(symbSol[i]));
-            #print("Equation added: ", eqsStep);
+            print("Equation added: ", eqsStep);
             eqsPlain := [op(eqsPlain), op(eqsStep)]:
           else 
             if (printLevel >= 1) then print("No real roots, nothing to do.") end if;
@@ -1478,6 +1510,8 @@ if ((i = 1) or (i = 4)) then
           eqsStep := getEquationsPlainRandom(symbSol[i], cfv, out, indets(cfv));
           eqsPlain := [op(eqsPlain), op(eqsStep)]:
         end if;
+        
+        print("here 3");
 
         if(incremental_f = "yes") then
           if (printLevel >= 1) then print("Solving plain equations (incremental)...") end if;
@@ -1495,9 +1529,10 @@ if ((i = 1) or (i = 4)) then
           end if;
           eqsPlain := [];
         end;
-end if;        
+
       end do:
 
+        print("here 3");
       if(incremental_f = "no") then 
         if (printLevel >= 1) then print("Solving plain equations...") end if;
         if (nops(eqsPlain) > 0) then 
@@ -1524,6 +1559,7 @@ end if;
     end if;
   end if;
 
+        print("here 3");
 
   if(nops(indets(out))>0) then
     # Equate all non-rational coefficients to 0. 
@@ -1634,6 +1670,7 @@ randomSolutions := proc(solution, cf, vars, n)
       if(eval(den, rvEval) <> 0) then
         randomSol := eval(cfev, rvEval):
         if (hasRealRoot(getExtension(randomSol)) = 1) then
+        print("HERE 12");
           if(first = 1) then
             MNew := randomSol;
             first := 0;
@@ -1730,6 +1767,7 @@ randomTraceSolutions := proc(solution, cf, vars, n)
       if(hasRationalSolution(randomSol) = 0) then
         L := getExtension(randomSol):
         if(hasRealRoot(L) = 1) then
+        print("HERE 13");
           vecTrace := Vector(mSize):
           for k from 1 to mSize do
             vecTrace[k] := evala(:-Trace(randomSol[k], L, {}));
