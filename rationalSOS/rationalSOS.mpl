@@ -56,7 +56,7 @@ option package;
 export numericSolverSubmatrixMaxRank;
 export solveSubmatrixGeneral, homogenize, isHomogeneous;
 export exactSOS, numericSolver, numericSolverSubmatrix, numericSolverSubmatrixRoundBefore, reduceByLinearEquation;
-export getDiag, randomRank, evalMat, roundVec, roundMat, roundMatFloat, smallToZero, smallToZeroMatrix, zeroRows, zeroDetSRows, zeroDetSys;
+export getDiag, randomRank, evalMat, roundVec, roundMat, roundMatFloat, roundVecFloat, smallToZero, smallToZeroMatrix, zeroRows, zeroDetSRows, zeroDetSys;
 export matrixToPoly, polyToMatrix, polyToMatrixVars, decompositionToMatrix, vectorTrace, getVars, rround, roundAbs, rrounde;
 export primitiveMatrix, nonRatCoef, getExtension, evalSolution, getCoeffs, dimSimplex;
 export cancelDenominator, reduceByLinearEquationLinear, linIndepRows, listSubsets;
@@ -309,7 +309,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   end if;
   
   if(computePolynomialDecomposition = "yes") then 
-    [fs[5], fs[6], MSol, MMSE, cfv]:
+    [fs[5], fs[6], MSol, MMSE, cfv, ySol]:
   else 
     [0, 0, MSol, MMSE, cfv]:
   end if
@@ -639,6 +639,25 @@ sedumiCallObjective := proc(A, AVars, objFunction)
     zeroTerm := eval(A, Equate([op(AVars)], Vector(nops(AVars)))):
     matlab_ct := convert(zeroTerm, Vector):
   end if;
+
+  if (objFunction = "totalSum") then
+    # Sedumi format, one matrix Ai, i >= 1, in each row
+    matlab_At := Matrix(nRows * nRows, nops(AVars)):
+    for i from 1 to nops(AVars) do
+      matlab_At[1..(nRows*nRows), i] := -convert(coeff(A, AVars[i]), Vector);
+    end do:
+
+    # The linear functional to minimize is the trace of A as a function
+    # of the unknowns yi
+    matlab_bt := Vector(1..(nops(AVars)), 0):
+    for i from 1 to nops(AVars) do
+      matlab_bt[i] := 1;
+    end do;
+    
+    # The matrix A0 is given as ct to SEDUMI
+    zeroTerm := eval(A, Equate([op(AVars)], Vector(nops(AVars)))):
+    matlab_ct := convert(zeroTerm, Vector):
+  end if;
   
   if (objFunction = "atomic") then
     # Sedumi format, one matrix Ai, i >= 1, in each row
@@ -851,6 +870,15 @@ roundMatFloat := proc(A,d)
     for j from 1 to nRows do
       A[i, j] := roundAbs(A[i, j], d);
     end do:
+  end do:
+  A;
+end proc:
+
+roundVecFloat := proc(A,d)
+  local i, j, nRows;
+  nRows:= LinearAlgebra[Dimension](A);
+  for i from 1 to nRows do
+    A[i] := roundAbs(A[i], d);
   end do:
   A;
 end proc:
