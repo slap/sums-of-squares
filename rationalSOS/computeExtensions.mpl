@@ -1,14 +1,18 @@
-rationalSOS := module()
+computeExtensions := module()
 description "Tools for exact sum of squares decomposition";
 option package;
-export computeExtension;
+export computeExtensionDeg5;
 
 
-# Given values of the coefficientes, compute the corresponding extensions
+# Given values of the coefficientes, computes four polynomials with coefficients in an algebraic
+# extension of degree 5 such that their is a rational polynomials.
 
-computeExtension := proc(s)
+computeExtensionDeg5 := proc(s)
   local p1, p2, p3, p4, p1s, p2s, p3s, p4s, p1ss, p2ss, p3ss, p4ss;
   local mp, fGeneric, f2, f3, lf, sSym1, sSym, ss, ssDen;
+  
+  local f, fh;
+  
   # We define a polynomial z as the sum of three squares in an algebraic
   # extension of degree 3 with generic coefficients.
 
@@ -68,3 +72,6 @@ computeExtension := proc(s)
 
   [f, fh, {p1ss, p2ss, p3ss, p4ss}, [sSym]];
 end proc:
+
+
+end module; # computeExtensions

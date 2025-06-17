@@ -56,7 +56,7 @@ option package;
 export numericSolverSubmatrixMaxRank;
 export solveSubmatrixGeneral, homogenize, isHomogeneous;
 export exactSOS, numericSolver, numericSolverSubmatrix, numericSolverSubmatrixRoundBefore, reduceByLinearEquation;
-export getDiag, randomRank, evalMat, roundVec, roundMat, roundMatFloat, smallToZero, smallToZeroMatrix, zeroRows, zeroDetSRows, zeroDetSys;
+export getDiag, randomRank, evalMat, roundVec, roundMat, roundMatFloat, roundVecFloat, smallToZero, smallToZeroMatrix, zeroRows, zeroDetSRows, zeroDetSys;
 export matrixToPoly, polyToMatrix, polyToMatrixVars, decompositionToMatrix, vectorTrace, getVars, rround, roundAbs, rrounde;
 export primitiveMatrix, nonRatCoef, getExtension, evalSolution, getCoeffs, dimSimplex;
 export cancelDenominator, reduceByLinearEquationLinear, linIndepRows, listSubsets;
@@ -309,7 +309,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   end if;
   
   if(computePolynomialDecomposition = "yes") then 
-    [fs[5], fs[6], MSol, MMSE, cfv]:
+    [fs[5], fs[6], MSol, MMSE, cfv, ySol]:
   else 
     [0, 0, MSol, MMSE, cfv]:
   end if
@@ -639,6 +639,25 @@ sedumiCallObjective := proc(A, AVars, objFunction)
     zeroTerm := eval(A, Equate([op(AVars)], Vector(nops(AVars)))):
     matlab_ct := convert(zeroTerm, Vector):
   end if;
+
+  if (objFunction = "totalSum") then
+    # Sedumi format, one matrix Ai, i >= 1, in each row
+    matlab_At := Matrix(nRows * nRows, nops(AVars)):
+    for i from 1 to nops(AVars) do
+      matlab_At[1..(nRows*nRows), i] := -convert(coeff(A, AVars[i]), Vector);
+    end do:
+
+    # The linear functional to minimize is the trace of A as a function
+    # of the unknowns yi
+    matlab_bt := Vector(1..(nops(AVars)), 0):
+    for i from 1 to nops(AVars) do
+      matlab_bt[i] := 1;
+    end do;
+    
+    # The matrix A0 is given as ct to SEDUMI
+    zeroTerm := eval(A, Equate([op(AVars)], Vector(nops(AVars)))):
+    matlab_ct := convert(zeroTerm, Vector):
+  end if;
   
   if (objFunction = "atomic") then
     # Sedumi format, one matrix Ai, i >= 1, in each row
@@ -855,6 +874,15 @@ roundMatFloat := proc(A,d)
   A;
 end proc:
 
+roundVecFloat := proc(A,d)
+  local i, j, nRows;
+  nRows:= LinearAlgebra[Dimension](A);
+  for i from 1 to nRows do
+    A[i] := roundAbs(A[i], d);
+  end do:
+  A;
+end proc:
+
 # Convert all entries of the matrix that at distance smaller than 10^(-d) from an integer, to that integer
 roundToIntMatrix := proc(M, d)
   local i,j, nRows, nCols, MR;
@@ -947,17 +975,22 @@ end proc:
 
 getEquationsPlain := proc(solSym, cfv, MMS, vars)
   local cfve, eqMinT, allEq, i, cofT, mSize, out, solCheck;
+
   mSize := LinearAlgebra[Dimension](cfv);
 
   cfve := eval(cfv, solSym):
   eqMinT := MMS.cfve:
+  
+  #print("here A3 - mSize = ", mSize);
 
   allEq := []:
   for i from 1 to mSize do
     cofT := coeffs(expand(numer(simplify(expand(eqMinT[i])))), vars);
     allEq := [op(allEq), cofT];
+    print("i = ", i);
   end do:
-  out := Equate(allEq,Vector(nops(allEq))):
+
+  out := Equate(allEq,Vector(nops(allEq))): 
   out;
 end proc:
 
@@ -1037,7 +1070,7 @@ nonRatCoef := proc(MMSE, mSize, az)
   allCoefEq := [];
   for i from 1 to mSize do 
     for j from i to mSize do 
-      print("argument: ", expand(numer(MMSE[i,j])), [az]);
+      #print("argument: ", expand(numer(MMSE[i,j])), [az]);
       cofT := coeffs(expand(numer(MMSE[i,j])), [az]);
       for ex from 2 to nops([cofT]) do
         allCoefEq := [op(allCoefEq), cofT[ex]];
@@ -1300,8 +1333,13 @@ hasRealRoot := proc(L)
   local n, allV, out, i;
   n := nops(L);
 
+  #print("checking real roots in extension - algebraic extension L = ", L);
+
   out := 0;
 
+  # Remove this part if too slow
+  #if (1 = 0) then
+  
   # First check
   allV := [evalf(allvalues(L))];
   for i from 1 to nops(allV) do
@@ -1310,17 +1348,28 @@ hasRealRoot := proc(L)
     end if:
   end do:
 
+
+  #print("First check result: ", out);
+  
   # Second check
   # Not working when the extension L has a label.
   if (out = 0) then
     allV := [fsolve(op(L))];
-    print("checked extension L", allV);
-    for i from 1 to nops(allV) do
-      if (Im(allV[i])=0) then 
-        out := 1;
-      end if:
-    end do:
+    if (nops(allV) > 0) then
+      print("checked extension - output of fsolve: ", allV);
+      for i from 1 to nops(allV) do
+        if (Im(allV[i])=0) then 
+          out := 1;
+          print("real root found:", allV[i]);
+          break;
+        end if:
+      end do:
+    end if;
   end if;
+  
+  #end if;
+  #out := 1;  
+  #print("finished!");
   
   out;
 end proc:
@@ -1445,7 +1494,7 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
       if (printLevel >= 1) then print("Computing plain equations...") end if;
       eqsPlain := []; 
       for i from 1 to nops(symbSol) do
-        if (printLevel >= 1) then print("plain equation", i) end if;
+        if (printLevel >= 1) then print("plain equation", i, ": ", symbSol[i]) end if;
 
         # We check if the equations contain roots of equations involving the unknowns
         if(nops(indets(symbSol[i])) > nops(vars)) then  # Extension with unknowns
@@ -1455,13 +1504,17 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
         end if;
 
         # Why we dont use "indeterminate"??
-        eqFace := "random";
+        # Check why would we prefer to use random equations...
+        #eqFace := "random";
 
         if(eqFace = "indeterminate") then
           L := getExtension(symbSol[i]);
           if (hasRealRoot(L) = 1) then
+            #print("HERE 11");
+            #print("printLevel", printLevel);
             if (printLevel >= 1) then print("Real root found") end if;
             eqsStep := getEquationsPlain(symbSol[i], cfv, out, getIndet(symbSol[i]));
+            print("Equation added: ", eqsStep);
             eqsPlain := [op(eqsPlain), op(eqsStep)]:
           else 
             if (printLevel >= 1) then print("No real roots, nothing to do.") end if;
@@ -1470,7 +1523,7 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           eqsStep := getEquationsPlainRandom(symbSol[i], cfv, out, indets(cfv));
           eqsPlain := [op(eqsPlain), op(eqsStep)]:
         end if;
-
+        
         if(incremental_f = "yes") then
           if (printLevel >= 1) then print("Solving plain equations (incremental)...") end if;
           out := solveEquations(out, eqsPlain):
@@ -1487,6 +1540,7 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           end if;
           eqsPlain := [];
         end;
+
       end do:
 
       if(incremental_f = "no") then 
@@ -1515,7 +1569,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
     end if;
   end if;
 
-
   if(nops(indets(out))>0) then
     # Equate all non-rational coefficients to 0. 
     # This is not a necessary condition.
@@ -1541,7 +1594,19 @@ end proc:
 # Evaluates a solution at random values until the dimension of
 # the space generated by all the evaluations is equal to the
 # expected dimension of the space.
+#
+# cf is the vector of monomials.
+# The matriz equation for the original polynomial is
+# f = cf^T * Q * cf
+# so if we find values of the variables such the solution has a real root,
+# we can replace this solution in the monomials in cf and obtain a vector
+# such that Q must satisfy the equation cf^T * Q * cf = 0
+
 #########################################################################
+
+# solution -> solution of f = 0 (or q1 = q2 = ... = qs = 0)
+# cf -> vector of monomials of degree d in n variable (for a polynomial f
+# of degree 2d in n variables).
 
 randomSolutions := proc(solution, cf, vars, n)
   local vecs, cfev, randomSol, randomSolAll, i, j, h, good;
@@ -1549,6 +1614,8 @@ randomSolutions := proc(solution, cf, vars, n)
   local MNew, nrankNew;
   local boundRank, den, coefList, rv, rvEval;  
   local indetsCFEV, trueIndets;
+  
+  #print("randomSolutions begin (randomized search of real solutions)");
 
   vecs := [];
   cfev := eval(cf, solution);
@@ -1631,6 +1698,11 @@ randomSolutions := proc(solution, cf, vars, n)
     # The provided solution has no indeterminates to specify
     vecs := [eval(cfev, solution)];
   end if:
+#  if (nops(vecs) = 0) then
+#    print("No real solutions found.");
+#  else 
+#    print("Total number of real points found for these equations:", nops(vecs));
+#  end if;
   vecs;
 end proc:
 
