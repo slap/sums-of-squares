@@ -129,7 +129,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   local originalRank, originalDimension;
   local MMSERound, approxSolution, solved;
 
-  if (printLevel >= 1) then print("exactSOS begins...") end if;
+  if (printLevel >= 5) then print("exactSOS begins...") end if;
 
   fSimp := expand(simplify(f));
   if(not(isHomogeneous(fSimp))) then
@@ -156,7 +156,6 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   # PROBLEM: The problem is now to determine rational values to those 
   # unknowns so that the matrix is positive semidefinite.
 
-  # Plain equations
   # Plain equations
   if(facial = "yes") then
   
@@ -201,17 +200,22 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   # Remove
   rRank := randomRank(evalf(MMSE));
 
+
   if(facial = "yes") then
-    print("-----");
-    print("Facial reduction results:");
-    print("Original matrix - Rank: ", originalRank, " - Number of indeterminates: ", originalDimension);
-    print("Matrix after facial reduction - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
-    #print("Matrix MMSE = ", evalf(simplify(MMSE)));
+    if (printLevel >= 1) then
+      print("-----");
+      print("Facial reduction results:");
+      print("Original matrix - Rank: ", originalRank, " - Number of indeterminates: ", originalDimension);
+      print("Matrix after facial reduction - Rank: ", rRank, " - Number of indeterminates: ", nops(indets(MMSE)));
+      #print("Matrix MMSE = ", evalf(simplify(MMSE)));
+    end if;
   else 
     MMSE := zeroRows(MMSE);
   end if;
   
-  print("Number of indeterminates: ", nops(indets(MMSE)));
+  if (printLevel >= 1) then
+    print("Number of indeterminates: ", nops(indets(MMSE)));
+  end if;
   
   if(nops(indets(MMSE)) > 0) then
     
@@ -223,16 +227,21 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
 
     if(useMatlab = "yes") then
     
-      print("Opening connection with Matlab");
+      if (printLevel >= 1) then print("Opening connection with Matlab") end if;
       openlink();
 
-      print("Calling numerical solver SEDUMI to find the values of the remaining indeterminates...");
+      if (printLevel >= 1) then
+        print("Calling numerical solver SEDUMI to find the values of the remaining indeterminates...");
+      end if;
 
       if(getExtension(MMSE)<>0) then
         print(getExtension(MMSE));
-        print("Matrix contains algebraic numbers. They will be rounded to call the numerical solver SEDUMI. You can also try forceRational = \"yes\" for computing an exact rational solution.");
+        
+        if (printLevel >= 1) then
+          print("Matrix contains algebraic numbers. They will be rounded to call the numerical solver SEDUMI. You can also try forceRational = \"yes\" for computing an exact rational solution.");
+        end if;
 
-        MMT, tVars, ySol := numericSolverSubmatrixRoundBefore(MMSE, rRank, objFunction);
+        MMT, tVars, ySol := numericSolverSubmatrixRoundBefore(MMSE, rRank, objFunction, printLevel);
 
         yRound := roundVec(ySol, digits);
         yRound := smallToZero(ySol, digits);
@@ -240,7 +249,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
         MSol := evalMat(MMSE, tVars, yRound);
         approxSolution := 1:
       else 
-        MMT, tVars, ySol := numericSolverSubmatrix(MMSE, rRank, objFunction);
+        MMT, tVars, ySol := numericSolverSubmatrix(MMSE, rRank, objFunction, printLevel);
         yRound := roundVec(ySol, digits);
         yRound := smallToZero(ySol, digits);
 
@@ -262,10 +271,12 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
             solved := false;
           end if;
 
-          if(solved) then
-            print("Reduced problem solved. Exact positive definite matrix found for the reduced problem.");
-          else 
-            print("An exact positive definite solution could not be found for the reduced problem.")
+          if (printLevel >= 1) then
+            if(solved) then
+              print("Reduced problem solved. Exact positive definite matrix found for the reduced problem.");
+            else 
+              print("An exact positive definite solution could not be found for the reduced problem.")
+            end if;
           end if;
         end if;
       else 
@@ -273,12 +284,16 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
       end if;
     else
       solved := false;
-      print("Problem not solved. Please try enabling numerical optimization via Matlab call to SEDUMI.");
+      if (printLevel >= 1) then
+        print("Problem not solved. Please try enabling numerical optimization via Matlab call to SEDUMI.");
+      end if;
       MSol := MMSE;
       ySol := {}:
     end if;
   else
-    print("An exact solution was found without calling the numerical solver. The solution matrix is unique under the specified conditions."); 
+    if (printLevel >= 1) then
+      print("An exact solution was found without calling the numerical solver. The solution matrix is unique under the specified conditions."); 
+    end if;
     solved := true;
     MSol := MMSE;
     ySol := {}:
@@ -286,7 +301,7 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
   MSol := simplify(MSol);
 
   if(computePolynomialDecomposition = "yes") then
-    fs := matrixToPoly(MSol, cfv);
+    fs := matrixToPoly(MSol, cfv, printLevel - 1);
   end if;
     
   if(solved) then 
@@ -301,9 +316,13 @@ exactSOS := proc(f, {`useMatlab`:="yes", `zeros` := {}, `realPolynomials` := {},
       end;
 
       if(cFail = 1) then
-        print("The solution is not positive semidefinite. A SOS decomposition may not exist under the specified conditions.");
+        if (printLevel >= 1) then
+          print("The solution is not positive semidefinite. A SOS decomposition may not exist under the specified conditions.");
+        end if;
       else 
-        print("Extension succedeed. An exact SOS decomposition has been found for the input polynomial.");
+        if (printLevel >= 1) then
+          print("Extension succedeed. An exact SOS decomposition has been found for the input polynomial.");
+        end if;
       end if;
     end if;
   end if;
@@ -420,7 +439,7 @@ sedumiCallMaxSpectralNorm := proc(A, AVars)
   nRows, nCols := LinearAlgebra[Dimension](A);
 
 
-  print("Opening connection with Matlab");
+  if (printLevel >= 1) then print("Opening connection with Matlab") end if;
   openlink();
   
   matlab_At := Matrix((2*nRows) * (2*nRows), nops(AVars) + 1):
@@ -711,19 +730,24 @@ end proc:
 # the original matrix
 #######################################################################
 
-solveSubset := proc(A, sub0, objFunction)
+solveSubset := proc(A, sub0, objFunction, printLevel := 0)
   local MMT, tVars, x, y, randomMMT;
 
   MMT := LinearAlgebra[SubMatrix](A, sub0, sub0):
   tVars := indets(MMT);
   
-  print("tVars = ", tVars);
+  if (printLevel >= 1) then
+    print("tVars = ", tVars);
+  end if;
   
   randomMMT := eval(MMT, Equate([op(tVars)], LinearAlgebra[RandomVector](nops(tVars)))):
-  if (LinearAlgebra[Determinant](randomMMT) <> 0) then
-    print("SEDUMI CALL - Objective function = ", objFunction);
-  else 
-    print("SEDUMI CALL - zero determinant - Objective function = ", objFunction);
+  
+  if (printLevel >= 1) then
+    if (LinearAlgebra[Determinant](randomMMT) <> 0) then
+      print("SEDUMI CALL - Objective function = ", objFunction);
+    else 
+      print("SEDUMI CALL - zero determinant - Objective function = ", objFunction);
+    end if;
   end if;
   
 #  Dimension of the Simplex
@@ -739,36 +763,36 @@ solveSubset := proc(A, sub0, objFunction)
   
   if (objFunction = "atomic") then
     # Minimum atomic norm
-    print("SEDUMI CALL - atomic");
+    if (printLevel >= 1) then print("SEDUMI CALL - atomic") end if;
     x, y := sedumiCallObjective(MMT, tVars, "atomic");
   end if;
   if (objFunction = "spectralSDP") then
     # Maximum spectral norm restricted to SDP matrices
-    print("SEDUMI CALL - spectral");
+    if (printLevel >= 1) then print("SEDUMI CALL - spectral") end if;
     x, y := sedumiCallMaxSpectralNormSDP(MMT, tVars);
   end if;
   if (objFunction = "spectral") then
     # Maximum spectral norm
-    print("SEDUMI CALL - spectral");
+    if (printLevel >= 1) then print("SEDUMI CALL - spectral") end if;
     x, y := sedumiCallMaxSpectralNorm(MMT, tVars);
   end if;
   if (objFunction = "random") then
     # Minimize a random linear form
-    print("SEDUMI CALL - random");
+    if (printLevel >= 1) then print("SEDUMI CALL - random") end if;
     x, y := sedumiCallObjective(MMT, tVars, "random");
   end if;
   if (objFunction = "minX") then
     # Minimum atomic norm
-    print("SEDUMI CALL - min X");
+    if (printLevel >= 1) then print("SEDUMI CALL - min X") end if;
     x, y := sedumiCallObjective(MMT, tVars, "minX");
   end if;
   if (objFunction = "maxX") then
     # Minimum atomic norm
-    print("SEDUMI CALL - max X");
+    if (printLevel >= 1) then print("SEDUMI CALL - max X") end if;
     x, y := sedumiCallObjective(MMT, tVars, "maxX");
   end if;
   if (objFunction = "eig") then
-    print("SEDUMI CALL - eig");
+    if (printLevel >= 1) then print("SEDUMI CALL - eig") end if;
     # Maximum of the smallest eigenvalue
     x, y := sedumiCallObjective(MMT, tVars, "eig");
   end if;
@@ -1205,15 +1229,22 @@ end proc:
 # matrix, it solves the equations and replace the solution in the 
 # entries of the matrix.
 #########################################################################
-solveEquations := proc(M, eqs)
+solveEquations := proc(M, eqs, printLevel := 0)
   local out, matC, vecC, sol123, solT;
+  
+  if(printLevel >= 5) then print("GenerateMatrix") end if;
   matC, vecC := LinearAlgebra[GenerateMatrix](eqs,indets(M)):
 
+  if(printLevel >= 5) then print("Dimensión", LinearAlgebra[Dimension](matC)) end if;
+
+  if(printLevel >= 5) then print("LinearSolve") end if;
   sol123 := LinearAlgebra[LinearSolve](matC, vecC):
 
   solT := Equate([op(indets(M))], sol123):
   
   out := eval(M, solT):
+  
+  if(printLevel >= 5) then print("solveEquations finished") end if;
   out;
 end proc:
 
@@ -1223,14 +1254,14 @@ end proc:
 # exact matrix and not the rounded one. We use an approximation 
 # only for calling SEDUMI
 #########################################################################
-numericSolverSubmatrixRoundBefore := proc(M, d, objFunction)
+numericSolverSubmatrixRoundBefore := proc(M, d, objFunction, printLevel := 0)
   local MMT, tVars, y, subRows, nRows, nCols, ind, i;
   local l, subMat, subsub, MApprox;
 
   subsub := linIndepRows(M, d);
   
   MApprox := evalf(simplify(M));
-  MMT, tVars, y := solveSubset(MApprox, subsub, objFunction);
+  MMT, tVars, y := solveSubset(MApprox, subsub, objFunction, printLevel-1);
 
   MMT, tVars, y:
 end proc:
@@ -1246,7 +1277,7 @@ numericSolverSubmatrixMaxRank := proc(M, objFunction)
   d := randomRank(M);
   subsub := linIndepRows(M, d);
 
-  MMT, tVars, y := solveSubset(M, subsub, objFunction);
+  MMT, tVars, y := solveSubset(M, subsub, objFunction, printLevel-1);
   MMT, tVars, y:
 end proc:
 
@@ -1255,7 +1286,7 @@ end proc:
 # The second parameter d indicates the rank of the matrix M, so it will
 # call SEDUMI with a submatrix of size d x d
 #########################################################################
-numericSolverSubmatrix := proc(M, d, objFunction)
+numericSolverSubmatrix := proc(M, d, objFunction, printLevel := 0)
   local MMT, tVars, y, subRows, nRows, nCols, ind, i;
   local l, subMat, rndRk, subsub;
 
@@ -1269,15 +1300,18 @@ numericSolverSubmatrix := proc(M, d, objFunction)
 
   # We compute linear independnt rows only if d < nRows(M)
   nRows, nCols := LinearAlgebra[Dimension](M);  
-  if(d < nRows) then 
+  if (d < nRows) then 
     subsub := linIndepRows(M, d);
   else 
     subsub := [seq(i, i = 1 .. nRows)];
   end;
   
   #DEBUG
-  print("subsub = ", subsub);
-  MMT, tVars, y := solveSubset(M, subsub, objFunction);
+  if (printLevel >= 10) then
+    print("subsub = ", subsub);
+  end if;
+  
+  MMT, tVars, y := solveSubset(M, subsub, objFunction, printLevel - 1);
 
   MMT, tVars, y:
 end proc:
@@ -1297,12 +1331,12 @@ end proc:
 #########################################################################
 # Calls SEDUMI to compute an approximate solution.
 #########################################################################
-numericSolver := proc(M, objFunction)
+numericSolver := proc(M, objFunction, printLevel := 0)
   local MMT, tVars, y, subRows, nRows, nCols, ind, i;
   subRows := [];
   nRows, nCols := LinearAlgebra[Dimension](M);
   subRows := [seq(i, i = 1 .. nRows)];
-  MMT, tVars, y := solveSubset(M, subRows, objFunction);
+  MMT, tVars, y := solveSubset(M, subRows, objFunction, printLevel - 1);
   MMT, tVars, y:
 end proc:
 
@@ -1546,7 +1580,7 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
       if(incremental_f = "no") then 
         if (printLevel >= 1) then print("Solving plain equations...") end if;
         if (nops(eqsPlain) > 0) then 
-          out := solveEquations(out, eqsPlain):
+          out := solveEquations(out, eqsPlain, printLevel - 1):
         else 
           print("No equations found. Check!");
         end if;
@@ -1802,7 +1836,7 @@ end proc:
 
 # Computes the sum of square decompostion for a matrix in the spectrahedron
 # Vector v is the vector of monomials indexing the columns of Q
-matrixToPoly := proc(Q,v)
+matrixToPoly := proc(Q,v, printLevel := 0)
   local n, p, a, ci, ri, ai, pi;
   local i, j;
   local f, cfs, cfPlain, vars, cfv, cfvt, mSize, MM;
@@ -1836,15 +1870,15 @@ matrixToPoly := proc(Q,v)
     # Matrix for decomposition o3 as sum of rational squares, 
     # following SOS (Parrillo et al.)
     try
-      print("Computing Cholesky decomposition...");  
+      if (printLevel >= 1) then print("Computing Cholesky decomposition...") end if;
       L, Lt := MatrixDecomposition(Q, method = Cholesky);
       DD := IdentityMatrix(nCols);
     catch:
-      print("Cholesky decomposition failed. Matrix is not positive definite. We use LDLt decomposition.");
+      if (printLevel >= 1) then print("Cholesky decomposition failed. Matrix is not positive definite. We use LDLt decomposition.") end if;
       try
         L, DD, Lt := MatrixDecomposition(Q, method = LDLt);
       catch: 
-        print("Matrix decomposition failed for output matrix. Please check!");
+        if (printLevel >= 1) then print("Matrix decomposition failed for output matrix. Please check!") end if;
         L := IdentityMatrix(nCols);
         DD := Q;
         Lt := L;
@@ -2053,11 +2087,11 @@ end proc:
 # If it is negative, something went wrong, there is no 
 # possible SOS decomposition.
 
-checkMinEig := proc(M)
+checkMinEig := proc(M, printLevel := 0)
   local nRows, nCols, rr, MMT, tVars, vSol, A10, e10;
   nRows, nCols := LinearAlgebra[Dimension](M);  
   rr := randomRank(M);
-  MMT, tVars, vSol := numericSolverSubmatrix(M, rr):
+  MMT, tVars, vSol := numericSolverSubmatrix(M, rr, printLevel):
   
   A10 := evalMat(M, tVars, vSol):
   e10 := eig(A10);
