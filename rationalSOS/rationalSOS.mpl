@@ -1333,11 +1333,12 @@ hasRealRoot := proc(L)
   local n, allV, out, i;
   n := nops(L);
 
-  print("checking real roots in extension - algebraic extension L = ", L);
+  #print("checking real roots in extension - algebraic extension L = ", L);
 
   out := 0;
 
-  if (1 = 0) then
+  # Remove this part if too slow
+  #if (1 = 0) then
   
   # First check
   allV := [evalf(allvalues(L))];
@@ -1348,7 +1349,7 @@ hasRealRoot := proc(L)
   end do:
 
 
-  print("First check result: ", out);
+  #print("First check result: ", out);
   
   # Second check
   # Not working when the extension L has a label.
@@ -1366,11 +1367,9 @@ hasRealRoot := proc(L)
     end if;
   end if;
   
-  end if;
-  
-  out := 1;
-  
-  print("finished!");
+  #end if;
+  #out := 1;  
+  #print("finished!");
   
   out;
 end proc:
@@ -1616,7 +1615,7 @@ randomSolutions := proc(solution, cf, vars, n)
   local boundRank, den, coefList, rv, rvEval;  
   local indetsCFEV, trueIndets;
   
-  print("randomSolutions begin (randomized search of real solutions)");
+  #print("randomSolutions begin (randomized search of real solutions)");
 
   vecs := [];
   cfev := eval(cf, solution);
@@ -1699,11 +1698,11 @@ randomSolutions := proc(solution, cf, vars, n)
     # The provided solution has no indeterminates to specify
     vecs := [eval(cfev, solution)];
   end if:
-  if (nops(vecs) = 0) then
-    print("No real solutions found.");
-  else 
-    print("Total number of real points found for these equations:", nops(vecs));
-  end if;
+#  if (nops(vecs) = 0) then
+#    print("No real solutions found.");
+#  else 
+#    print("Total number of real points found for these equations:", nops(vecs));
+#  end if;
   vecs;
 end proc:
 
