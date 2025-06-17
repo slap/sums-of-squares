@@ -976,17 +976,12 @@ end proc:
 getEquationsPlain := proc(solSym, cfv, MMS, vars)
   local cfve, eqMinT, allEq, i, cofT, mSize, out, solCheck;
 
-  print("here A1");
-
   mSize := LinearAlgebra[Dimension](cfv);
-
-  print("here A2");
-
 
   cfve := eval(cfv, solSym):
   eqMinT := MMS.cfve:
   
-  print("here A3 - mSize = ", mSize);
+  #print("here A3 - mSize = ", mSize);
 
   allEq := []:
   for i from 1 to mSize do
@@ -995,11 +990,7 @@ getEquationsPlain := proc(solSym, cfv, MMS, vars)
     print("i = ", i);
   end do:
 
-  print("here A4");
-
-  out := Equate(allEq,Vector(nops(allEq))):
-  
-  print("here A5");
+  out := Equate(allEq,Vector(nops(allEq))): 
   out;
 end proc:
 
@@ -1433,7 +1424,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
       else 
         L := getExtension(symbSol[i]):
         if (hasRealRoot(L) = 1) then
-          print("HERE 10");
           if (L <> 0) then 
             thisEq := op(getEquationsTrace(symbSol[i], cfv, out, vars, L));
             eqsTrace := [op(eqsTrace), thisEq]:
@@ -1444,8 +1434,6 @@ facialReduction := proc(M, symbSol, cfv, { `incremental_f`::string := "no", `eqT
           print("no real roots in this solution, please check...", L);
         end if:
       end if;
-
-print("HERE 1");
 
       if(incremental_f = "yes") then
 
@@ -1472,8 +1460,6 @@ print("HERE 1");
         end if;
       end if;
     end do:
-
-print("HERE 2");
 
     if(incremental_f = "no") then
       if (printLevel >= 1) then print("Solving trace equations...") end if;
@@ -1525,8 +1511,8 @@ print("HERE 2");
         if(eqFace = "indeterminate") then
           L := getExtension(symbSol[i]);
           if (hasRealRoot(L) = 1) then
-            print("HERE 11");
-            print("printLevel", printLevel);
+            #print("HERE 11");
+            #print("printLevel", printLevel);
             if (printLevel >= 1) then print("Real root found") end if;
             eqsStep := getEquationsPlain(symbSol[i], cfv, out, getIndet(symbSol[i]));
             print("Equation added: ", eqsStep);
@@ -1539,8 +1525,6 @@ print("HERE 2");
           eqsPlain := [op(eqsPlain), op(eqsStep)]:
         end if;
         
-        print("here 3");
-
         if(incremental_f = "yes") then
           if (printLevel >= 1) then print("Solving plain equations (incremental)...") end if;
           out := solveEquations(out, eqsPlain):
@@ -1560,7 +1544,6 @@ print("HERE 2");
 
       end do:
 
-        print("here 3");
       if(incremental_f = "no") then 
         if (printLevel >= 1) then print("Solving plain equations...") end if;
         if (nops(eqsPlain) > 0) then 
@@ -1586,8 +1569,6 @@ print("HERE 2");
       end;
     end if;
   end if;
-
-        print("here 3");
 
   if(nops(indets(out))>0) then
     # Equate all non-rational coefficients to 0. 
@@ -1698,7 +1679,6 @@ randomSolutions := proc(solution, cf, vars, n)
       if(eval(den, rvEval) <> 0) then
         randomSol := eval(cfev, rvEval):
         if (hasRealRoot(getExtension(randomSol)) = 1) then
-        print("HERE 12");
           if(first = 1) then
             MNew := randomSol;
             first := 0;
@@ -1795,7 +1775,6 @@ randomTraceSolutions := proc(solution, cf, vars, n)
       if(hasRationalSolution(randomSol) = 0) then
         L := getExtension(randomSol):
         if(hasRealRoot(L) = 1) then
-        print("HERE 13");
           vecTrace := Vector(mSize):
           for k from 1 to mSize do
             vecTrace[k] := evala(:-Trace(randomSol[k], L, {}));
