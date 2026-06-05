@@ -63,7 +63,9 @@ export cancelDenominator, reduceByLinearEquationLinear, linIndepRows, listSubset
 export sedumiCallObjective, sedumiCallMaxSpectralNorm, sedumiCallMaxSpectralNormSDP;
 export solveSubset, roundToIntMatrix, roundMatToZero, solveToZero;
 export minorsDet;
-local sublist, addElt, getEquationsTrace, getEquationsTraceRandom, getEquationsPlain, getEquationsPlainRandom; 
+export vanishingFormKernel, vanishingFormKernelPSD, isUniqueSOS;
+local monomialsDeg;
+local sublist, addElt, getEquationsTrace, getEquationsTraceRandom, getEquationsPlain, getEquationsPlainRandom;
 local hasExtension, hasRationalSolution, getIndet, solveEquations;
 local hasRealRoot;
 local emptyRow, productDenominator;
@@ -2387,7 +2389,295 @@ solveToZero := proc(A, B, d)
   end do;
   Bt;
 end proc;
-      
+
+
+#######################################################################
+# monomialsDeg
+# Returns the list of all monomials of degree e in the given variables.
+#######################################################################
+monomialsDeg := proc(vars, e)
+  local s, i, cfs;
+  s := 0;
+  for i from 1 to nops(vars) do
+    s := s + vars[i];
+  end do:
+  cfs := [coeffs(expand(s^e), vars, 'cf')]:
+  [cf];
+end proc:
+
+
+#######################################################################
+# vanishingFormKernel
+#
+# Given a list g = [p_1, ..., p_s] of homogeneous forms of the same
+# degree d in the variables 'vars', it builds the generic linear form
+# ell on H_{n,2d} satisfying
+#       ell(p_i * q) = 0   for all q in H_{n,d} and all i,
+# and the associated symmetric (moment / catalecticant) matrix
+#       Q_ell(p,q) = ell(p*q),   p, q in H_{n,d}.
+# By construction every p_i lies in the kernel of Q_ell, so the linear
+# span W = <p_1,...,p_s> is contained in the kernel of every Q_ell.
+#
+# The procedure returns the GENERIC kernel of the family {Q_ell}, which
+# equals the common kernel  K = intersection over ell of ker(Q_ell),
+# expressed as a list of forms of degree d. It is computed by evaluating
+# the free parameters of the family at random values and taking the
+# NullSpace (this gives the common kernel with probability 1).
+#
+# NOTE on uniqueness of SOS:
+#   Uniqueness of the decomposition f = sum p_i^2 implies K = W. Hence if
+#   dim(K) > dim(W) the decomposition is NOT unique. The converse needs
+#   the positive-semidefinite condition ell in Sigma^* (a max-rank PSD
+#   Q_ell with the same kernel), which can be checked with the SDP/SEDUMI
+#   routines of this library.
+#
+# Input:
+#   g       : list of homogeneous forms of the same degree d
+#   varsIn  : (optional) list of variables. Defaults to indets(g).
+#
+# Output: [kernelPolys, dimKernel, Q, B, paramVars]
+#   kernelPolys : list of forms of degree d spanning the generic kernel
+#   dimKernel   : dimension of that kernel
+#   Q           : the symbolic matrix Q_ell (entries linear in paramVars)
+#   B           : monomial basis of H_{n,d} indexing the rows/cols of Q
+#   paramVars   : free parameters of the family {Q_ell}
+#######################################################################
+vanishingFormKernel := proc(g, varsIn := NULL, {`printLevel`::integer := 0})
+  local vars, d, n, B, B2, N, M, i, j, k, a;
+  local tvars, ellEqs, h, cf, sol, Q, paramVars, subsRand, Qrand, kern, kernPolys, v;
+
+  if(varsIn = NULL) then
+    vars := [op(indets(g))];
+  else
+    vars := varsIn;
+  end if;
+
+  d := degree(g[1]);
+  n := nops(vars);
+
+  # Monomial bases of H_{n,d} (indexes Q) and H_{n,2d} (indexes ell)
+  B  := monomialsDeg(vars, d):
+  B2 := monomialsDeg(vars, 2*d):
+  N  := nops(B):
+  M  := nops(B2):
+
+  if(printLevel >= 1) then
+    print("Variables: ", vars, "  degree d = ", d);
+    print("dim H_{n,d} = ", N, "   dim H_{n,2d} = ", M);
+  end if;
+
+  # Unknowns parametrising the linear form ell on H_{n,2d}:
+  # ell(B2[a]) = tEll[a]
+  tvars := [seq(tEll[a], a = 1 .. M)]:
+
+  # Linear conditions  ell(p_i * q) = 0  for q ranging over the basis B
+  ellEqs := []:
+  for i from 1 to nops(g) do
+    for k from 1 to N do
+      h := expand(g[i] * B[k]):
+      cf := getCoeffs(h, B2):
+      ellEqs := [op(ellEqs), add(cf[a] * tvars[a], a = 1 .. M)]:
+    end do:
+  end do:
+
+  if(printLevel >= 1) then
+    print("Number of linear conditions on ell: ", nops(ellEqs));
+  end if;
+
+  sol := solve(Equate(ellEqs, Vector(nops(ellEqs))), {op(tvars)}):
+
+  # Symmetric matrix Q_ell(B[j], B[k]) = ell(B[j]*B[k])
+  Q := Matrix(N, N):
+  for j from 1 to N do
+    for k from j to N do
+      h := expand(B[j] * B[k]):
+      cf := getCoeffs(h, B2):
+      Q[j, k] := eval(add(cf[a] * tvars[a], a = 1 .. M), sol):
+      Q[k, j] := Q[j, k]:
+    end do:
+  end do:
+
+  paramVars := indets(Q):
+
+  if(printLevel >= 1) then
+    print("Number of free parameters of the family {Q_ell}: ", nops(paramVars));
+  end if;
+
+  # Generic kernel = kernel for a random choice of the free parameters
+  if(nops(paramVars) > 0) then
+    subsRand := Equate([op(paramVars)], LinearAlgebra[RandomVector](nops(paramVars))):
+    Qrand := eval(Q, subsRand):
+  else
+    Qrand := Q:
+  end if;
+
+  kern := LinearAlgebra[NullSpace](Qrand):
+
+  kernPolys := []:
+  for i from 1 to nops(kern) do
+    v := kern[i]:
+    kernPolys := [op(kernPolys), expand(add(v[j] * B[j], j = 1 .. N))]:
+  end do:
+
+  [kernPolys, nops(kern), Q, B, paramVars];
+end proc:
+
+
+#######################################################################
+# vanishingFormKernelPSD
+#
+# Same construction as vanishingFormKernel, but it restricts to the
+# positive-semidefinite members of the family, i.e. it realises the set
+#       { Q_ell : ell in Sigma^*,  ell(g) = 0 }
+# from the paper (the condition ell in Sigma^* is exactly Q_ell >= 0).
+#
+# It calls SEDUMI (objective "eig", maximise the smallest eigenvalue) to
+# obtain a maximum-rank PSD element Q* of the family. Its kernel
+#       K_psd = ker(Q*)
+# is the kernel of a relative-interior point of the PSD face, and equals
+# the common kernel of ALL the PSD members. This is the kernel that
+# actually decides uniqueness:
+#       f = sum p_i^2 is the unique SOS decomposition  <=>  K_psd = <g>.
+#
+# Unlike vanishingFormKernel (which intersects over the whole linear
+# family, including non-PSD members, and may report a kernel that is too
+# small), this version gives the correct answer for the "unique" verdict.
+# It requires Matlab + SEDUMI.
+#
+# Input:
+#   g       : list of homogeneous forms of the same degree d
+#   varsIn  : (optional) list of variables. Defaults to indets(g).
+#
+# Output: [kernelPolys, dimKernel, Qstar, B]
+#######################################################################
+vanishingFormKernelPSD := proc(g, varsIn := NULL, {`printLevel`::integer := 0, `digits`::integer := 8})
+  local vars, res, Q, B, paramVars, N, rRank;
+  local MMT, tVars, ySol, Qstar, Qr, kern, kernPolys, v, i, j;
+
+  if(varsIn = NULL) then
+    vars := [op(indets(g))];
+  else
+    vars := varsIn;
+  end if;
+
+  # Build the symbolic family Q_ell
+  res := vanishingFormKernel(g, vars, ':-printLevel' = (printLevel - 1)):
+  Q := res[3]:
+  B := res[4]:
+  paramVars := res[5]:
+  N := nops(B):
+
+  if(nops(paramVars) = 0) then
+    # The family is a single matrix: no optimisation needed.
+    Qstar := Q:
+  else
+    if(printLevel >= 1) then
+      print("Calling SEDUMI to find a maximum-rank PSD element of the family...");
+    end if;
+    openlink();
+    # Maximise the smallest eigenvalue over the family to land on a
+    # relative-interior (maximum-rank) PSD point.
+    MMT, tVars, ySol := numericSolver(Q, "eig", printLevel - 1):
+    Qstar := evalMat(Q, tVars, smallToZero(ySol, digits)):
+  end if;
+
+  # Numerical kernel of the PSD optimum.
+  Qr := smallToZeroMatrix(evalf(Qstar), digits):
+  kern := LinearAlgebra[NullSpace](Qr):
+
+  kernPolys := []:
+  for i from 1 to nops(kern) do
+    v := kern[i]:
+    kernPolys := [op(kernPolys), expand(add(v[j] * B[j], j = 1 .. N))]:
+  end do:
+
+  [kernPolys, nops(kern), Qstar, B];
+end proc:
+
+
+#######################################################################
+# isUniqueSOS
+#
+# Tests whether a sum of squares decomposition  f = sum p_i^2  given by
+# g = [p_1, ..., p_s] is the unique SOS decomposition of f (up to
+# orthogonal equivalence).
+#
+# It compares the linear span W = <g> with the kernel of the family of
+# quadratic forms {Q_ell : ell(p_i q) = 0}. Since W is always contained
+# in that kernel, the decomposition is unique iff the kernel equals W.
+#
+# Two modes (option useMatlab):
+#   useMatlab = "yes" (default): uses vanishingFormKernelPSD, i.e. the
+#       kernel of a MAXIMUM-RANK PSD element (ell in Sigma^*). This is the
+#       correct test: dim K_psd = dim W  <=>  decomposition is unique.
+#       Requires Matlab + SEDUMI.
+#   useMatlab = "no": fast linear pre-check using vanishingFormKernel
+#       (no SDP). It can only CERTIFY NON-UNIQUENESS:
+#         - dim K > dim W   =>  NOT unique (reliable);
+#         - dim K = dim W   =>  INCONCLUSIVE (W could still be a proper
+#                               subspace of the PSD kernel; e.g. (x^2+y^2)^2
+#                               gives equality but is not unique).
+#
+# Output: [verdict, dimKernel, dimSpanG, kernelPolys]
+#   verdict is true/false in useMatlab="yes" mode, and
+#   true(=NOT unique)/FAIL(="inconclusive") encoded as
+#   false/'inconclusive' in useMatlab="no" mode.
+#######################################################################
+isUniqueSOS := proc(g, varsIn := NULL, {`printLevel`::integer := 0, `useMatlab`::string := "yes", `digits`::integer := 8})
+  local vars, B, N, res, kernPolys, dimKernel, i, Gmat, rankG, verdict;
+
+  if(varsIn = NULL) then
+    vars := [op(indets(g))];
+  else
+    vars := varsIn;
+  end if;
+
+  if(useMatlab = "yes") then
+    res := vanishingFormKernelPSD(g, vars, ':-printLevel' = printLevel, ':-digits' = digits):
+    B := res[4]:
+  else
+    res := vanishingFormKernel(g, vars, ':-printLevel' = printLevel):
+    B := res[4]:
+  end if;
+  kernPolys := res[1]:
+  dimKernel := res[2]:
+  N := nops(B):
+
+  # Dimension of the span of g in the basis B
+  Gmat := Matrix(N, nops(g)):
+  for i from 1 to nops(g) do
+    Gmat[1 .. N, i] := getCoeffs(expand(g[i]), B):
+  end do:
+  rankG := LinearAlgebra[Rank](Gmat):
+
+  if(useMatlab = "yes") then
+    verdict := evalb(dimKernel = rankG):
+    if(printLevel >= 1) then
+      print("dim(span(g)) = ", rankG, "    dim(PSD kernel) = ", dimKernel);
+      if(verdict) then
+        print("The SOS decomposition is UNIQUE.");
+      else
+        print("The SOS decomposition is NOT unique.");
+      end if;
+    end if;
+  else
+    if(dimKernel > rankG) then
+      verdict := false;     # reliably not unique
+    else
+      verdict := 'inconclusive';
+    end if;
+    if(printLevel >= 1) then
+      print("dim(span(g)) = ", rankG, "    dim(linear kernel) = ", dimKernel);
+      if(dimKernel > rankG) then
+        print("The SOS decomposition is NOT unique (linear kernel strictly larger than <g>).");
+      else
+        print("Linear pre-check INCONCLUSIVE. Run with useMatlab=\"yes\" to decide uniqueness.");
+      end if;
+    end if;
+  end if;
+
+  [verdict, dimKernel, rankG, kernPolys];
+end proc:
 
 
 end module; # rationalSOS
