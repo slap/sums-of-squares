@@ -2552,7 +2552,8 @@ end proc:
 #######################################################################
 vanishingFormKernelPSD := proc(g, varsIn := NULL, {`printLevel`::integer := 0, `digits`::integer := 8})
   local vars, res, Q, B, paramVars, N, rRank;
-  local MMT, tVars, ySol, Qstar, Qr, kern, kernPolys, v, i, j;
+  local MMT, tVars, ySol, Qstar, kern, kernPolys, v, i, j;
+  local evals, maxEv, tol, kNum;
 
   if(varsIn = NULL) then
     vars := [op(indets(g))];
@@ -2581,9 +2582,28 @@ vanishingFormKernelPSD := proc(g, varsIn := NULL, {`printLevel`::integer := 0, `
     Qstar := evalMat(Q, tVars, smallToZero(ySol, digits)):
   end if;
 
-  # Numerical kernel of the PSD optimum.
-  Qr := smallToZeroMatrix(evalf(Qstar), digits):
-  kern := LinearAlgebra[NullSpace](Qr):
+  # Kernel of the PSD optimum.  Qstar is an EXACT rational matrix (ySol was
+  # rationalised by smallToZero), so compute its kernel exactly.  Do NOT go
+  # through evalf + entrywise rounding: that turns Qstar into a float matrix
+  # whose NullSpace is unreliable and typically returns the empty kernel even
+  # when the rank is deficient.
+  kern := LinearAlgebra[NullSpace](Qstar):
+
+  # Numeric sanity check: count eigenvalues of Qstar that are ~0.  If this
+  # disagrees with the exact kernel, the rationalisation of the SEDUMI optimum
+  # was too coarse/fine and `digits` should be adjusted.
+  evals := LinearAlgebra[Eigenvalues](evalf(Qstar)):
+  maxEv := max(seq(abs(Re(evals[i])), i = 1 .. N)):
+  tol := maxEv * 10^(-digits):
+  kNum := 0:
+  for i from 1 to N do
+    if(abs(Re(evals[i])) <= tol) then kNum := kNum + 1: end if;
+  end do:
+  if(nops(kern) <> kNum and printLevel >= 1) then
+    print("Warning: exact kernel dimension", nops(kern),
+          "differs from numeric (eigenvalue) estimate", kNum,
+          "- try a different value of `digits`.");
+  end if;
 
   kernPolys := []:
   for i from 1 to nops(kern) do
